@@ -148,24 +148,29 @@
         img.src = ev.target.result;
       };
       reader.readAsDataURL(file);
+    } else if (file) {
+      alert('Rasm 5MB dan kichik boʻlsin!');
     }
   }
 
   async function saveProfile() {
     const username = document.getElementById('username').value.trim();
-    if (username.length < 2) return document.getElementById('profileError').textContent = 'Ism 2+ harf bo\'lsin!';
+    if (username.length < 2) return document.getElementById('profileError').textContent = 'Ism 2+ harf boʻlsin!';
 
     let avatar_url = null;
     const file = document.getElementById('avatarInput').files[0];
     if (file) {
       const path = `${me.id}/${Date.now()}.${file.name.split('.').pop()}`;
-      await supabase.storage.from('avatars').upload(path, file, { upsert: true });
-      avatar_url = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+      if (!uploadError) {
+        avatar_url = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+      }
     }
 
-    await supabase.from('profiles').upsert({
+    const { error } = await supabase.from('profiles').upsert({
       id: me.id, username, email: me.email, avatar_url
     });
+    if (error) return document.getElementById('profileError').textContent = 'Xato: ' + error.message;
 
     myUsername = username;
     hideAll();
@@ -183,7 +188,9 @@
       .neq('id', me.id);
 
     list.innerHTML = '';
-    data?.forEach(u => {
+    if (!data || data.length === 0) return list.innerHTML = '<p style="text-align:center;padding:50px;color:#777;">Hech kim topilmadi</p>';
+
+    data.forEach(u => {
       const div = document.createElement('div');
       div.className = 'user-item';
       div.innerHTML = `
@@ -233,7 +240,7 @@
 
   async function sendImage(e) {
     const file = e.target.files[0];
-    if (!file || file.size > 5*1024*1024) return alert('Rasm 5MB dan kichik bo\'lsin!');
+    if (!file || file.size > 5*1024*1024) return alert('Rasm 5MB dan kichik boʻlsin!');
 
     const reader = new FileReader();
     reader.onload = async ev => {
@@ -245,7 +252,8 @@
         canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
         const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9));
         const path = `chat_images/${me.id}/${Date.now()}.jpg`;
-        await supabase.storage.from('chat_images').upload(path, blob);
+        const { error: uploadError } = await supabase.storage.from('chat_images').upload(path, blob);
+        if (uploadError) return;
         const url = supabase.storage.from('chat_images').getPublicUrl(path).data.publicUrl;
 
         await supabase.from('messages').insert({
@@ -266,6 +274,7 @@
       .order('created_at', { ascending: true });
 
     const container = document.getElementById('messages');
+    container.innerHTML = '';
     data.forEach(m => addMessage(m, container));
     container.scrollTop = container.scrollHeight;
 
@@ -275,7 +284,7 @@
       ).subscribe();
   }
 
-  function addMessage(m, container = document.getElementById('messages')) {
+  function addMessage(m, container) {
     const isMe = m.sender_id === me.id;
     const div = document.createElement('div');
     div.className = `msg ${isMe ? 'sent' : 'received'}`;
@@ -287,6 +296,7 @@
     document.getElementById('modalImage').src = src;
     document.getElementById('imageModal').style.display = 'flex';
   }
+
   function closeModal() {
     document.getElementById('imageModal').style.display = 'none';
   }
@@ -297,7 +307,6 @@
     location.reload();
   }
 
-  // Eng muhim: oldin chat ochilgan bo'lsa uni tiklash
   function restoreChatIfNeeded() {
     const saved = localStorage.getItem('lastChat');
     if (saved) {
@@ -316,7 +325,7 @@
       return;
     }
 
-    if (window.location.hash.includes('access_token')) {
+    if (location.hash.includes('access_token')) {
       history.replaceState(null, null, location.pathname);
     }
 
@@ -329,18 +338,24 @@
       myUsername = profile.username;
       hideAll();
       document.getElementById('usersStep').classList.remove('hidden');
-      restoreChatIfNeeded(); // Bu yerda chat tiklanadi!
+      restoreChatIfNeeded();
     }
   });
 
-  // Mobil orqa tugma
   window.addEventListener('popstate', () => {
     if (!document.getElementById('chatStep').classList.contains('hidden')) {
       backToUsers();
     }
   });
 
-  window.addEventListener('load', () => supabase.auth.getSession());
+  window.addEventListener('load', async () => {
+    const { data } = await supabase.auth.getSession();
+    if (location.hash.includes('access_token')) {
+      setTimeout(async () => {
+        await supabase.auth.getSession();
+      }, 1500);
+    }
+  });
 </script>
 </body>
 </html>
