@@ -2,7 +2,7 @@
 <html lang="uz">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>OrbicXs – Global Chat</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -30,11 +30,12 @@
     .chat-header img{width:40px;height:40px;border-radius:50%;margin:0 12px;object-fit:cover;}
     .chat-header .info{flex:1;}
     .chat-header .status{font-size:13px;opacity:0.9;}
-    .messages{flex:1;overflow-y:auto;padding:10px;background:#e5ddd5;display:flex;flex-direction:column;gap:8px;}
+    .messages{flex:1;overflow-y:auto;padding:10px;background:#e5ddd5;display:flex;flex-direction:column;gap:8px;scroll-behavior:smooth;}
     .msg{max-width:75%;padding:9px 13px;border-radius:18px;position:relative;word-wrap:break-word;}
     .sent{background:#d9fdd3;align-self:flex-end;border-bottom-right-radius:4px;}
     .received{background:#fff;align-self:flex-start;border-bottom-left-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,0.1);}
     .msg-time{font-size:11px;color:#888;margin-top:4px;text-align:right;}
+    .msg img{cursor:pointer;max-width:100%;border-radius:12px;margin:5px 0;}
     .input-bar{display:flex;align-items:center;padding:8px;background:#f0f0f0;}
     .input-bar input{flex:1;padding:12px 16px;border-radius:30px;border:none;background:#fff;margin:0 8px;outline:none;}
     .input-bar button{width:44px;height:44px;border-radius:50%;background:#507ea8;color:#fff;border:none;cursor:pointer;font-size:20px;}
@@ -43,6 +44,14 @@
     .error-msg{color:red;font-size:14px;margin-top:10px;}
     .status-msg{margin-top:15px;font-size:15px;}
     .online{color:#4caf50 !important;font-weight:500;}
+    .loading{display:flex;justify-content:center;align-items:center;height:100%;font-size:16px;color:#666;}
+    .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);justify-content:center;align-items:center;z-index:1000;}
+    .modal img{max-width:90%;max-height:90%;border-radius:8px;}
+    .modal-close{position:absolute;top:20px;right:20px;color:#fff;font-size:30px;cursor:pointer;}
+    @media (max-width: 420px) {
+      .app{max-width:100%;box-shadow:none;}
+      body{padding:0;margin:0;}
+    }
   </style>
 </head>
 <body>
@@ -57,7 +66,6 @@
       <p class="status-msg" id="status"></p>
     </div>
   </div>
-
   <!-- 2. Profil yaratish -->
   <div id="profileStep" class="hidden">
     <div class="header">
@@ -73,7 +81,6 @@
       <p class="error-msg" id="profileError"></p>
     </div>
   </div>
-
   <!-- 3. Foydalanuvchilar ro'yxati -->
   <div id="usersStep" class="hidden">
     <div class="header">Xabarlar</div>
@@ -84,7 +91,6 @@
       <p style="text-align:center;padding:50px;color:#777;">Ism kiriting...</p>
     </div>
   </div>
-
   <!-- 4. Chat oynasi -->
   <div id="chatStep" class="hidden chat-view">
     <div class="chat-header">
@@ -95,7 +101,9 @@
         <div class="status" id="chatStatus">offline</div>
       </div>
     </div>
-    <div class="messages" id="messages"></div>
+    <div class="messages" id="messages">
+      <div class="loading" id="chatLoading">Yuklanmoqda...</div>
+    </div>
     <div class="input-bar">
       <input type="file" id="imgInput" accept="image/*" style="display:none" onchange="sendImage(event)">
       <button onclick="document.getElementById('imgInput').click()" title="Rasm yuborish">Attach</button>
@@ -103,17 +111,21 @@
       <button onclick="sendMsg()" title="Yuborish">Send</button>
     </div>
   </div>
+  <!-- Modal for image zoom -->
+  <div id="imageModal" class="modal" onclick="closeModal()">
+    <span class="modal-close" onclick="closeModal()">&times;</span>
+    <img id="modalImage" src="">
+  </div>
 </div>
-
 <script>
   const supabase = window.supabase.createClient(
     'https://fedtvocdgqhgerzspojg.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlZHR2b2NkZ3FoZ2VyenNwb2pnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwNDM1MjcsImV4cCI6MjA4MDYxOTUyN30.Iv4vajez_sKQAziycpibt6kVThVV-7DQkEBgUAI4s8M'
   );
-
-  let me = null;           // hozirgi foydalanuvchi (user object)
-  let myUsername = null;   // foydalanuvchi ismi
-  let currentChat = null;  // hozirgi chatdagi odam ismi
+  let me = null;
+  let myUsername = null;
+  let currentChat = null;
+  let chatHistory = []; // Chat sahifalari tarixini saqlash uchun
 
   // Barcha oynalarni yashirish
   function hideAll() {
@@ -132,12 +144,10 @@
   async function sendMagicLink() {
     const email = document.getElementById('email').value.trim();
     if (!email) return status('Email kiriting!', 'red');
-
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: location.href }
     });
-
     if (error) return status(error.message, 'red');
     status('Magic havola emailingizga yuborildi! Tekshiring', '#4caf50');
   }
@@ -155,7 +165,6 @@
       document.getElementById('profileError').textContent = 'Ism kamida 2 harfdan iborat bo‘lsin!';
       return;
     }
-
     let avatar_url = null;
     const file = document.getElementById('avatarInput').files[0];
     if (file) {
@@ -167,7 +176,6 @@
         avatar_url = data.publicUrl;
       }
     }
-
     const { error } = await supabase.from('profiles').upsert({
       id: me.id,
       username,
@@ -175,18 +183,16 @@
       avatar_url,
       last_seen: new Date().toISOString()
     });
-
     if (error) {
       document.getElementById('profileError').textContent = 'Xato: ' + error.message;
       return;
     }
-
-    // Muvaffaqiyatli saqlansa – avto o‘tish
     myUsername = username;
     hideAll();
     document.getElementById('usersStep').classList.remove('hidden');
     updateOnline();
     setInterval(updateOnline, 30000);
+    history.pushState({ page: 'users' }, '');
   }
 
   // Online statusni yangilash
@@ -196,7 +202,7 @@
     }
   }
 
-  // Chiqish (agar kerak bo‘lsa)
+  // Chiqish
   async function signOut() {
     await supabase.auth.signOut();
     location.reload();
@@ -205,26 +211,23 @@
   // Foydalanuvchilarni qidirish
   async function searchUsers(q) {
     const list = document.getElementById('userList');
+    list.innerHTML = '<div class="loading">Yuklanmoqda...</div>';
     if (q.length < 2) {
       list.innerHTML = '<p style="text-align:center;padding:50px;color:#777;">Ism kiriting...</p>';
       return;
     }
-
     const { data } = await supabase.from('profiles')
       .select('username, avatar_url, last_seen')
       .ilike('username', `%${q}%`)
       .neq('id', me.id);
-
     list.innerHTML = '';
     if (!data || data.length === 0) {
       list.innerHTML = '<p style="text-align:center;padding:50px;color:#777;">Hech kim topilmadi</p>';
       return;
     }
-
     data.forEach(u => {
       const diff = (Date.now() - new Date(u.last_seen)) / 60000;
       const status = diff < 3 ? '<span class="online">online</span>' : 'oxirgi faollik: ' + new Date(u.last_seen).toLocaleTimeString('uz');
-
       const div = document.createElement('div');
       div.className = 'user-item';
       div.innerHTML = `
@@ -246,8 +249,9 @@
     document.getElementById('chatAvatar').src = avatar || 'https://via.placeholder.com/40';
     hideAll();
     document.getElementById('chatStep').classList.remove('hidden');
-    document.getElementById('messages').innerHTML = '';
+    document.getElementById('messages').innerHTML = '<div class="loading" id="chatLoading">Yuklanmoqda...</div>';
     loadMessages();
+    history.pushState({ page: 'chat', username }, '');
   }
 
   // Xabar yuborish
@@ -255,7 +259,6 @@
     const input = document.getElementById('msgInput');
     const text = input.value.trim();
     if (!text || !currentChat) return;
-
     const chatId = [myUsername, currentChat].sort().join('_');
     await supabase.from('messages').insert({
       chat_id: chatId,
@@ -269,13 +272,11 @@
   async function sendImage(e) {
     const file = e.target.files[0];
     if (!file || !currentChat) return;
-
     const chatId = [myUsername, currentChat].sort().join('_');
     const ext = file.name.split('.').pop();
     const path = `${me.id}/${Date.now()}.${ext}`;
     await supabase.storage.from('chat_images').upload(path, file);
     const { data } = supabase.storage.from('chat_images').getPublicUrl(path);
-
     await supabase.from('messages').insert({
       chat_id: chatId,
       sender: myUsername,
@@ -290,9 +291,8 @@
       .select()
       .eq('chat_id', chatId)
       .order('created_at', { ascending: true });
-
+    document.getElementById('messages').innerHTML = '';
     data.forEach(m => addMessage(m));
-
     // Real-time
     supabase.channel('chat')
       .on('postgres_changes', {
@@ -311,49 +311,74 @@
     div.innerHTML = m.text + `<div class="msg-time">${new Date(m.created_at).toLocaleTimeString('uz', {hour:'2-digit', minute:'2-digit'})}</div>`;
     document.getElementById('messages').appendChild(div);
     div.scrollIntoView({ behavior: 'smooth' });
+    // Rasmga click event qo'shish
+    const img = div.querySelector('img');
+    if (img) {
+      img.onclick = () => openModal(img.src);
+    }
   }
 
   function backToUsers() {
     currentChat = null;
     hideAll();
     document.getElementById('usersStep').classList.remove('hidden');
+    history.pushState({ page: 'users' }, '');
   }
 
-  // Eng muhim qism: Auth holatini doimiy kuzatish
+  // Modal functions
+  function openModal(src) {
+    document.getElementById('modalImage').src = src;
+    document.getElementById('imageModal').style.display = 'flex';
+  }
+
+  function closeModal() {
+    document.getElementById('imageModal').style.display = 'none';
+  }
+
+  // Browser back button handling
+  window.onpopstate = function(event) {
+    if (event.state && event.state.page === 'users') {
+      hideAll();
+      document.getElementById('usersStep').classList.remove('hidden');
+    } else if (event.state && event.state.page === 'chat') {
+      openChat(event.state.username, ''); // Avatar ni qayta yuklash kerak bo'lsa, saqlash mumkin
+    } else {
+      history.go(1); // Oldingi sahifaga qaytmaslik
+    }
+  };
+
+  // Auth holatini kuzatish
   supabase.auth.onAuthStateChange(async (event, session) => {
     me = session?.user ?? null;
-
     if (!me) {
       hideAll();
       document.getElementById('authStep').classList.remove('hidden');
+      history.pushState({ page: 'auth' }, '');
       return;
     }
-
     const { data: profile } = await supabase
       .from('profiles')
       .select('username')
       .eq('id', me.id)
       .single();
-
     if (!profile || !profile.username) {
-      // Profil hali yo‘q
       hideAll();
       document.getElementById('profileStep').classList.remove('hidden');
+      history.pushState({ page: 'profile' }, '');
     } else {
-      // Hammasi tayyor
       myUsername = profile.username;
       hideAll();
       document.getElementById('usersStep').classList.remove('hidden');
       updateOnline();
       setInterval(updateOnline, 30000);
+      history.pushState({ page: 'users' }, '');
     }
   });
 
-  // Sahifa ochilganda ham bir marta tekshirish (ixtiyoriy)
+  // Sahifa yuklanganda session ni tekshirish
   window.addEventListener('load', () => {
-    supabase.auth.getSession(); // onAuthStateChange ni trigger qiladi
+    supabase.auth.getSession();
   });
 </script>
 </body>
 </html>
-
