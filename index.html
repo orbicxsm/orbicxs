@@ -105,7 +105,8 @@
 <script>
   const supabase = window.supabase.createClient(
     'https://fedtvocdgqhgerzspojg.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlZHR2b2NkZ3FoZ2VyenNwb2pnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwNDM1MjcsImV4cCI6MjA4MDYxOTUyN30.Iv4vajez_sKQAziycpibt6kVThVV-7DQkEBgUAI4s8M'
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlZHR2b2NkZ3FoZ2VyenNwb2pnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwNDM1MjcsImV4cCI6MjA4MDYxOTUyN30.Iv4vajez_sKQAziycpibt6kVThVV-7DQkEBgUAI4s8M',
+    { auth: { persistSession: true } } // Sessiyani saqlash uchun qo'shildi
   );
 
   let me = null, myUsername = null, currentChatId = null, currentReceiverId = null;
@@ -175,31 +176,58 @@
     myUsername = username;
     hideAll();
     document.getElementById('usersStep').classList.remove('hidden');
-    restoreChatIfNeeded();
+    searchUsers('');
+  }
+
+  async function getRecentUsers() {
+    const { data: sent } = await supabase.from('messages').select('receiver_id').eq('sender_id', me.id);
+    const { data: received } = await supabase.from('messages').select('sender_id').eq('receiver_id', me.id);
+    const allIds = [...new Set([...(sent || []).map(s => s.receiver_id), ...(received || []).map(r => r.sender_id)])];
+    if (allIds.length === 0) return [];
+    const { data } = await supabase.from('profiles').select('id, username, avatar_url').in('id', allIds);
+    return data || [];
   }
 
   async function searchUsers(q) {
     const list = document.getElementById('userList');
-    if (q.length < 2) return list.innerHTML = '<p style="text-align:center;padding:50px;color:#777;">Ism kiriting...</p>';
-
-    const { data } = await supabase.from('profiles')
-      .select('id, username, avatar_url')
-      .ilike('username', `%${q}%`)
-      .neq('id', me.id);
-
     list.innerHTML = '';
-    if (!data || data.length === 0) return list.innerHTML = '<p style="text-align:center;padding:50px;color:#777;">Hech kim topilmadi</p>';
+    if (q === '') {
+      const recent = await getRecentUsers();
+      if (recent.length === 0) {
+        list.innerHTML = '<p style="text-align:center;padding:50px;color:#777;">Hech kim bilan yozishmadingiz</p>';
+        return;
+      }
+      recent.forEach(u => {
+        const div = document.createElement('div');
+        div.className = 'user-item';
+        div.innerHTML = `
+          <img src="${u.avatar_url || 'https://via.placeholder.com/50/507ea8/fff?text='+u.username[0]}">
+          <div><div class="name">${u.username}</div></div>
+        `;
+        div.onclick = () => openChat(u.id, u.username, u.avatar_url);
+        list.appendChild(div);
+      });
+    } else {
+      const { data } = await supabase.from('profiles')
+        .select('id, username, avatar_url')
+        .ilike('username', `%${q}%`)
+        .neq('id', me.id);
 
-    data.forEach(u => {
-      const div = document.createElement('div');
-      div.className = 'user-item';
-      div.innerHTML = `
-        <img src="${u.avatar_url || 'https://via.placeholder.com/50/507ea8/fff?text='+u.username[0]}">
-        <div><div class="name">${u.username}</div></div>
-      `;
-      div.onclick = () => openChat(u.id, u.username, u.avatar_url);
-      list.appendChild(div);
-    });
+      if (!data || data.length === 0) {
+        list.innerHTML = '<p style="text-align:center;padding:50px;color:#777;">Hech kim topilmadi</p>';
+        return;
+      }
+      data.forEach(u => {
+        const div = document.createElement('div');
+        div.className = 'user-item';
+        div.innerHTML = `
+          <img src="${u.avatar_url || 'https://via.placeholder.com/50/507ea8/fff?text='+u.username[0]}">
+          <div><div class="name">${u.username}</div></div>
+        `;
+        div.onclick = () => openChat(u.id, u.username, u.avatar_url);
+        list.appendChild(div);
+      });
+    }
   }
 
   function openChat(userId, username, avatar) {
@@ -222,6 +250,7 @@
     currentReceiverId = null;
     hideAll();
     document.getElementById('usersStep').classList.remove('hidden');
+    searchUsers('');
     history.pushState({page: 'users'}, '', location.pathname);
   }
 
@@ -338,6 +367,7 @@
       myUsername = profile.username;
       hideAll();
       document.getElementById('usersStep').classList.remove('hidden');
+      searchUsers('');
       restoreChatIfNeeded();
     }
   });
