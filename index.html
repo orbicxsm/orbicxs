@@ -43,29 +43,27 @@
     .error-msg{color:red;font-size:14px;margin-top:10px;}
     .status-msg{margin-top:15px;font-size:15px;}
     .online{color:#4caf50 !important;font-weight:500;}
+    #imageModal{display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.95);justify-content:center;align-items:center;}
+    #imageModal img{max-width:95%;max-height:95%;border-radius:12px;}
+    .close{position:absolute;top:20px;right:30px;color:#fff;font-size:50px;cursor:pointer;}
   </style>
 </head>
 <body>
 <div class="app">
-  <!-- 1. Kirish -->
   <div id="authStep">
     <div class="header">OrbicXs Global</div>
     <div class="content">
       <h2 style="margin-bottom:20px;color:#333;">Xush kelibsiz!</h2>
-      <input id="email" type="email" placeholder="email@gmail.com" required>
+      <input id="email" type="email" placeholder="email@gmail.com">
       <button onclick="sendMagicLink()">HAVOLA YUBORISH</button>
       <p class="status-msg" id="status"></p>
     </div>
   </div>
 
-  <!-- 2. Profil yaratish -->
   <div id="profileStep" class="hidden">
-    <div class="header">
-      <span class="back" onclick="signOut()">Back</span>
-      Profilni to'ldiring
-    </div>
+    <div class="header"><span class="back" onclick="signOut()">Back</span>Profilni to'ldiring</div>
     <div class="content">
-      <img id="profilePreview" src="https://via.placeholder.com/120/507ea8/ffffff?text=+" alt="Avatar">
+      <img id="profilePreview" src="https://via.placeholder.com/120/507ea8/ffffff?text=+">
       <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="previewAvatar(event)">
       <button onclick="document.getElementById('avatarInput').click()">Rasm tanlash</button>
       <input id="username" type="text" placeholder="Ismingiz (masalan: Jamshid)" maxlength="20">
@@ -74,18 +72,12 @@
     </div>
   </div>
 
-  <!-- 3. Foydalanuvchilar ro'yxati -->
   <div id="usersStep" class="hidden">
     <div class="header">Xabarlar</div>
-    <div class="search">
-      <input type="text" placeholder="Ism bo'yicha qidirish..." oninput="searchUsers(this.value.trim())">
-    </div>
-    <div class="user-list" id="userList">
-      <p style="text-align:center;padding:50px;color:#777;">Ism kiriting...</p>
-    </div>
+    <div class="search"><input type="text" placeholder="Ism bo'yicha qidirish..." oninput="searchUsers(this.value.trim())"></div>
+    <div class="user-list" id="userList"><p style="text-align:center;padding:50px;color:#777;">Ism kiriting...</p></div>
   </div>
 
-  <!-- 4. Chat oynasi -->
   <div id="chatStep" class="hidden chat-view">
     <div class="chat-header">
       <span class="back" onclick="backToUsers()">Back</span>
@@ -98,11 +90,16 @@
     <div class="messages" id="messages"></div>
     <div class="input-bar">
       <input type="file" id="imgInput" accept="image/*" style="display:none" onchange="sendImage(event)">
-      <button onclick="document.getElementById('imgInput').click()" title="Rasm yuborish">Attach</button>
+      <button onclick="document.getElementById('imgInput').click()">Attach</button>
       <input id="msgInput" placeholder="Xabar yozing..." onkeypress="if(event.key==='Enter') sendMsg()">
-      <button onclick="sendMsg()" title="Yuborish">Send</button>
+      <button onclick="sendMsg()">Send</button>
     </div>
   </div>
+</div>
+
+<div id="imageModal" onclick="closeModal()">
+  <span class="close" onclick="closeModal()">×</span>
+  <img id="modalImage" src="">
 </div>
 
 <script>
@@ -111,248 +108,239 @@
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlZHR2b2NkZ3FoZ2VyenNwb2pnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwNDM1MjcsImV4cCI6MjA4MDYxOTUyN30.Iv4vajez_sKQAziycpibt6kVThVV-7DQkEBgUAI4s8M'
   );
 
-  let me = null;           // hozirgi foydalanuvchi (user object)
-  let myUsername = null;   // foydalanuvchi ismi
-  let currentChat = null;  // hozirgi chatdagi odam ismi
+  let me = null, myUsername = null, currentChatId = null, currentReceiverId = null;
 
-  // Barcha oynalarni yashirish
   function hideAll() {
     document.querySelectorAll('#authStep, #profileStep, #usersStep, #chatStep')
       .forEach(el => el.classList.add('hidden'));
   }
 
-  // Status xabar
   function status(text, color = '#4caf50') {
     const el = document.getElementById('status');
     el.textContent = text;
     el.style.color = color;
   }
 
-  // Magic Link yuborish
   async function sendMagicLink() {
     const email = document.getElementById('email').value.trim();
     if (!email) return status('Email kiriting!', 'red');
-
+    localStorage.setItem('lastEmail', email);
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: location.href }
+      options: { emailRedirectTo: location.origin + location.pathname }
     });
-
     if (error) return status(error.message, 'red');
-    status('Magic havola emailingizga yuborildi! Tekshiring', '#4caf50');
+    status('Havola emailingizga yuborildi! Tekshiring', '#4caf50');
   }
 
-  // Avatar oldindan ko‘rish
   function previewAvatar(e) {
     const file = e.target.files[0];
-    if (file) document.getElementById('profilePreview').src = URL.createObjectURL(file);
+    if (file && file.size <= 5*1024*1024) {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 120; canvas.height = 120;
+          canvas.getContext('2d').drawImage(img, 0, 0, 120, 120);
+          document.getElementById('profilePreview').src = canvas.toDataURL();
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
   }
 
-  // Profil saqlash
   async function saveProfile() {
     const username = document.getElementById('username').value.trim();
-    if (!username || username.length < 2) {
-      document.getElementById('profileError').textContent = 'Ism kamida 2 harfdan iborat bo‘lsin!';
-      return;
-    }
+    if (username.length < 2) return document.getElementById('profileError').textContent = 'Ism 2+ harf bo\'lsin!';
 
     let avatar_url = null;
     const file = document.getElementById('avatarInput').files[0];
     if (file) {
-      const ext = file.name.split('.').pop();
-      const path = `${me.id}/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
-      if (!error) {
-        const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-        avatar_url = data.publicUrl;
-      }
+      const path = `${me.id}/${Date.now()}.${file.name.split('.').pop()}`;
+      await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+      avatar_url = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
     }
 
-    const { error } = await supabase.from('profiles').upsert({
-      id: me.id,
-      username,
-      email: me.email,
-      avatar_url,
-      last_seen: new Date().toISOString()
+    await supabase.from('profiles').upsert({
+      id: me.id, username, email: me.email, avatar_url
     });
 
-    if (error) {
-      document.getElementById('profileError').textContent = 'Xato: ' + error.message;
-      return;
-    }
-
-    // Muvaffaqiyatli saqlansa – avto o‘tish
     myUsername = username;
     hideAll();
     document.getElementById('usersStep').classList.remove('hidden');
-    updateOnline();
-    setInterval(updateOnline, 30000);
+    restoreChatIfNeeded();
   }
 
-  // Online statusni yangilash
-  async function updateOnline() {
-    if (me) {
-      await supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', me.id);
-    }
-  }
-
-  // Chiqish (agar kerak bo‘lsa)
-  async function signOut() {
-    await supabase.auth.signOut();
-    location.reload();
-  }
-
-  // Foydalanuvchilarni qidirish
   async function searchUsers(q) {
     const list = document.getElementById('userList');
-    if (q.length < 2) {
-      list.innerHTML = '<p style="text-align:center;padding:50px;color:#777;">Ism kiriting...</p>';
-      return;
-    }
+    if (q.length < 2) return list.innerHTML = '<p style="text-align:center;padding:50px;color:#777;">Ism kiriting...</p>';
 
     const { data } = await supabase.from('profiles')
-      .select('username, avatar_url, last_seen')
+      .select('id, username, avatar_url')
       .ilike('username', `%${q}%`)
       .neq('id', me.id);
 
     list.innerHTML = '';
-    if (!data || data.length === 0) {
-      list.innerHTML = '<p style="text-align:center;padding:50px;color:#777;">Hech kim topilmadi</p>';
-      return;
-    }
-
-    data.forEach(u => {
-      const diff = (Date.now() - new Date(u.last_seen)) / 60000;
-      const status = diff < 3 ? '<span class="online">online</span>' : 'oxirgi faollik: ' + new Date(u.last_seen).toLocaleTimeString('uz');
-
+    data?.forEach(u => {
       const div = document.createElement('div');
       div.className = 'user-item';
       div.innerHTML = `
-        <img src="${u.avatar_url || 'https://via.placeholder.com/50/507ea8/fff?text=' + u.username[0]}">
-        <div>
-          <div class="name">${u.username}</div>
-          <div class="last">${status}</div>
-        </div>
+        <img src="${u.avatar_url || 'https://via.placeholder.com/50/507ea8/fff?text='+u.username[0]}">
+        <div><div class="name">${u.username}</div></div>
       `;
-      div.onclick = () => openChat(u.username, u.avatar_url || '');
+      div.onclick = () => openChat(u.id, u.username, u.avatar_url);
       list.appendChild(div);
     });
   }
 
-  // Chat ochish
-  function openChat(username, avatar) {
-    currentChat = username;
+  function openChat(userId, username, avatar) {
+    currentReceiverId = userId;
+    currentChatId = [me.id, userId].sort().join('_');
+    localStorage.setItem('lastChat', JSON.stringify({userId, username, avatar, chatId: currentChatId}));
+
     document.getElementById('chatName').textContent = username;
     document.getElementById('chatAvatar').src = avatar || 'https://via.placeholder.com/40';
     hideAll();
     document.getElementById('chatStep').classList.remove('hidden');
     document.getElementById('messages').innerHTML = '';
     loadMessages();
+    history.pushState({page: 'chat'}, '', location.pathname);
   }
 
-  // Xabar yuborish
+  function backToUsers() {
+    localStorage.removeItem('lastChat');
+    currentChatId = null;
+    currentReceiverId = null;
+    hideAll();
+    document.getElementById('usersStep').classList.remove('hidden');
+    history.pushState({page: 'users'}, '', location.pathname);
+  }
+
   async function sendMsg() {
     const input = document.getElementById('msgInput');
     const text = input.value.trim();
-    if (!text || !currentChat) return;
-
-    const chatId = [myUsername, currentChat].sort().join('_');
+    if (!text || !currentChatId) return;
     await supabase.from('messages').insert({
-      chat_id: chatId,
-      sender: myUsername,
+      chat_id: currentChatId,
+      sender_id: me.id,
+      receiver_id: currentReceiverId,
       text
     });
     input.value = '';
   }
 
-  // Rasm yuborish
   async function sendImage(e) {
     const file = e.target.files[0];
-    if (!file || !currentChat) return;
+    if (!file || file.size > 5*1024*1024) return alert('Rasm 5MB dan kichik bo\'lsin!');
 
-    const chatId = [myUsername, currentChat].sort().join('_');
-    const ext = file.name.split('.').pop();
-    const path = `${me.id}/${Date.now()}.${ext}`;
-    await supabase.storage.from('chat_images').upload(path, file);
-    const { data } = supabase.storage.from('chat_images').getPublicUrl(path);
+    const reader = new FileReader();
+    reader.onload = async ev => {
+      const img = new Image();
+      img.onload = async () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.min(800, img.width);
+        canvas.height = canvas.width * (img.height / img.width);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9));
+        const path = `chat_images/${me.id}/${Date.now()}.jpg`;
+        await supabase.storage.from('chat_images').upload(path, blob);
+        const url = supabase.storage.from('chat_images').getPublicUrl(path).data.publicUrl;
 
-    await supabase.from('messages').insert({
-      chat_id: chatId,
-      sender: myUsername,
-      text: `<img src="${data.publicUrl}" style="max-width:100%;border-radius:12px;margin:5px 0;">`
-    });
+        await supabase.from('messages').insert({
+          chat_id: currentChatId,
+          sender_id: me.id,
+          receiver_id: currentReceiverId,
+          text: `<a href="${url}" download><img src="${url}" style="max-width:100%;border-radius:12px;margin:5px 0;cursor:pointer;" onclick="event.stopPropagation();openModal('${url}')"></a>`
+        });
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
   }
 
-  // Xabarlarni yuklash va real-time tinglash
   async function loadMessages() {
-    const chatId = [myUsername, currentChat].sort().join('_');
     const { data } = await supabase.from('messages')
-      .select()
-      .eq('chat_id', chatId)
+      .select().eq('chat_id', currentChatId)
       .order('created_at', { ascending: true });
 
-    data.forEach(m => addMessage(m));
+    const container = document.getElementById('messages');
+    data.forEach(m => addMessage(m, container));
+    container.scrollTop = container.scrollHeight;
 
-    // Real-time
     supabase.channel('chat')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `chat_id=eq.${chatId}`
-      }, payload => addMessage(payload.new))
-      .subscribe();
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${currentChatId}` },
+        payload => { addMessage(payload.new, container); container.scrollTop = container.scrollHeight; }
+      ).subscribe();
   }
 
-  function addMessage(m) {
-    const isMe = m.sender === myUsername;
+  function addMessage(m, container = document.getElementById('messages')) {
+    const isMe = m.sender_id === me.id;
     const div = document.createElement('div');
     div.className = `msg ${isMe ? 'sent' : 'received'}`;
     div.innerHTML = m.text + `<div class="msg-time">${new Date(m.created_at).toLocaleTimeString('uz', {hour:'2-digit', minute:'2-digit'})}</div>`;
-    document.getElementById('messages').appendChild(div);
-    div.scrollIntoView({ behavior: 'smooth' });
+    container.appendChild(div);
   }
 
-  function backToUsers() {
-    currentChat = null;
-    hideAll();
-    document.getElementById('usersStep').classList.remove('hidden');
+  function openModal(src) {
+    document.getElementById('modalImage').src = src;
+    document.getElementById('imageModal').style.display = 'flex';
+  }
+  function closeModal() {
+    document.getElementById('imageModal').style.display = 'none';
   }
 
-  // Eng muhim qism: Auth holatini doimiy kuzatish
+  async function signOut() {
+    localStorage.clear();
+    await supabase.auth.signOut();
+    location.reload();
+  }
+
+  // Eng muhim: oldin chat ochilgan bo'lsa uni tiklash
+  function restoreChatIfNeeded() {
+    const saved = localStorage.getItem('lastChat');
+    if (saved) {
+      const {userId, username, avatar} = JSON.parse(saved);
+      openChat(userId, username, avatar);
+    }
+  }
+
   supabase.auth.onAuthStateChange(async (event, session) => {
     me = session?.user ?? null;
-
     if (!me) {
+      const lastEmail = localStorage.getItem('lastEmail');
+      if (lastEmail) document.getElementById('email').value = lastEmail;
       hideAll();
       document.getElementById('authStep').classList.remove('hidden');
       return;
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('id', me.id)
-      .single();
+    if (window.location.hash.includes('access_token')) {
+      history.replaceState(null, null, location.pathname);
+    }
 
-    if (!profile || !profile.username) {
-      // Profil hali yo‘q
+    const { data: profile } = await supabase.from('profiles').select('username').eq('id', me.id).single();
+
+    if (!profile?.username) {
       hideAll();
       document.getElementById('profileStep').classList.remove('hidden');
     } else {
-      // Hammasi tayyor
       myUsername = profile.username;
       hideAll();
       document.getElementById('usersStep').classList.remove('hidden');
-      updateOnline();
-      setInterval(updateOnline, 30000);
+      restoreChatIfNeeded(); // Bu yerda chat tiklanadi!
     }
   });
 
-  // Sahifa ochilganda ham bir marta tekshirish (ixtiyoriy)
-  window.addEventListener('load', () => {
-    supabase.auth.getSession(); // onAuthStateChange ni trigger qiladi
+  // Mobil orqa tugma
+  window.addEventListener('popstate', () => {
+    if (!document.getElementById('chatStep').classList.contains('hidden')) {
+      backToUsers();
+    }
   });
+
+  window.addEventListener('load', () => supabase.auth.getSession());
 </script>
 </body>
 </html>
