@@ -17,6 +17,7 @@
     input{background:#f5f5f5;}
     button{background:#507ea8;color:#fff;font-weight:500;cursor:pointer;transition:.3s;}
     button:hover{background:#3b6b94;}
+    button:disabled{background:#ccc;cursor:not-allowed;}
     .search{padding:12px;}
     .search input{background:#e8e8e8;border-radius:30px;padding-left:45px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:15px center;}
     .user-list{flex:1;overflow-y:auto;background:#efeaee;}
@@ -47,6 +48,7 @@
     .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);justify-content:center;align-items:center;z-index:9999;}
     .modal img{max-width:92%;max-height:92%;border-radius:12px;}
     .modal-close{position:absolute;top:20px;right:25px;color:#fff;font-size:42px;cursor:pointer;}
+    .error-details{font-size:12px;color:#999;margin-top:5px;}
     @media(max-width:420px){.app{border-radius:0;box-shadow:none;}}
   </style>
 </head>
@@ -62,6 +64,7 @@
       <input id="email" type="email" placeholder="email@gmail.com" autocomplete="email">
       <button onclick="sendMagicLink()">HAVOLA YUBORISH</button>
       <p class="status-msg" id="status"></p>
+      <p class="error-details" id="errorDetails"></p>
     </div>
   </div>
 
@@ -117,7 +120,7 @@
 </div>
 
 <script>
-// YANGI, HAVOLA 100% KELADI (hozir sinovdan o‘tdim)
+// Supabase client (2025-yil uchun yangilangan)
 const supabase = window.supabase.createClient(
   'https://avvujfydhugnqbbzqsup.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2dnVqZnlkaHVnbnFiYnpxc3VwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU2NTQ4MDAsImV4cCI6MjA1MTIzMDgwMH0.1i5J3j4d5v9ew7k9q8p0r2t4v6y8x0z2c4b6a9d1f3g5h7j9l'
@@ -126,10 +129,14 @@ const supabase = window.supabase.createClient(
 let me = null, myUsername = null, currentChat = null;
 
 async function recoverSession() {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session) {
-    await supabase.auth.setSession(session);
-    return session.user;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      await supabase.auth.setSession(session);
+      return session.user;
+    }
+  } catch (err) {
+    console.error('Session recovery error:', err);
   }
   return null;
 }
@@ -143,125 +150,198 @@ function show(id) {
 async function sendMagicLink() {
   const email = document.getElementById('email').value.trim();
   if (!email) return status('Email kiriting', 'red');
-  document.querySelector('button').disabled = true;
-  document.getElementById('status').innerHTML = 'Yuborilmoqda...';
+  
+  const btn = document.querySelector('button');
+  btn.disabled = true;
+  btn.textContent = 'Yuborilmoqda...';
+  document.getElementById('status').innerHTML = '';
+  document.getElementById('errorDetails').innerHTML = '';
 
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: location.href }
-  });
+  try {
+    console.log('Sending magic link to:', email); // Debug
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { 
+        emailRedirectTo: window.location.origin + window.location.pathname // To'g'ri URL
+      }
+    });
 
-  document.querySelector('button').disabled = false;
-  if (error) status(error.message, 'red');
-  else status('Havola emailingizga yuborildi! Spamni ham tekshiring', '#4caf50');
+    if (error) {
+      console.error('Supabase error:', error); // Debug
+      status('Xato: ' + error.message, 'red');
+      document.getElementById('errorDetails').textContent = 'Batafsil: ' + (error.cause || 'Noma\'lum');
+    } else {
+      status('Havola emailingizga yuborildi! Spamni ham tekshiring', '#4caf50');
+    }
+  } catch (err) {
+    console.error('Fetch error:', err); // Debug
+    status('Failed to fetch: Tarmoq xatosi', 'red');
+    document.getElementById('errorDetails').textContent = 'Console\'ni tekshiring (F12) yoki extension’larni o‘chiring.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'HAVOLA YUBORISH';
+  }
 }
 
-function status(t,c='#4caf50'){document.getElementById('status').innerHTML=t;document.getElementById('status').style.color=c;}
+function status(t, c='#4caf50') {
+  document.getElementById('status').innerHTML = t;
+  document.getElementById('status').style.color = c;
+}
 
-function previewAvatar(e){if(e.target.files[0]) document.getElementById('profilePreview').src=URL.createObjectURL(e.target.files[0]);}
+function previewAvatar(e) {
+  if (e.target.files[0]) document.getElementById('profilePreview').src = URL.createObjectURL(e.target.files[0]);
+}
 
 async function saveProfile() {
   const username = document.getElementById('username').value.trim();
-  if (username.length<2) return document.getElementById('profileError').textContent='Ism 2+ harf';
-  let avatar_url = null;
-  const file = document.getElementById('avatarInput').files[0];
-  if(file){
-    const path=`${me.id}/${Date.now()}.${file.name.split('.').pop()}`;
-    await supabase.storage.from('avatars').upload(path,file,{upsert:true});
-    avatar_url = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+  if (username.length < 2) return document.getElementById('profileError').textContent = 'Ism 2+ harf';
+  try {
+    let avatar_url = null;
+    const file = document.getElementById('avatarInput').files[0];
+    if (file) {
+      const path = `${me.id}/${Date.now()}.${file.name.split('.').pop()}`;
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+      if (!uploadError) {
+        const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+        avatar_url = data.publicUrl;
+      }
+    }
+    const { error } = await supabase.from('profiles').upsert({
+      id: me.id, username, email: me.email, avatar_url, last_seen: new Date().toISOString()
+    });
+    if (error) return document.getElementById('profileError').textContent = error.message;
+    myUsername = username; 
+    show('usersStep'); 
+    updateOnline(); 
+    setInterval(updateOnline, 25000);
+  } catch (err) {
+    document.getElementById('profileError').textContent = 'Saqlashda xato: ' + err.message;
   }
-  const {error} = await supabase.from('profiles').upsert({id:me.id,username,email:me.email,avatar_url,last_seen:new Date().toISOString()});
-  if(error) return document.getElementById('profileError').textContent=error.message;
-  myUsername=username; show('usersStep'); updateOnline(); setInterval(updateOnline,25000);
 }
 
-async function updateOnline(){ if(me) await supabase.from('profiles').update({last_seen:new Date().toISOString()}).eq('id',me.id); }
-
-async function searchUsers(q){
-  const list=document.getElementById('userList');
-  if(q.length<2){list.innerHTML='<p style="text-align:center;padding:60px;color:#777;">Ism kiriting...</p>';return;}
-  const {data}=await supabase.from('profiles').select('username,avatar_url,last_seen').ilike('username',`%${q}%`).neq('id',me.id);
-  list.innerHTML='';
-  data?.forEach(u=>{
-    const online = (Date.now()-new Date(u.last_seen))/60000 < 3;
-    const el=document.createElement('div'); el.className='user-item';
-    el.innerHTML=`<img src="${u.avatar_url||'https://via.placeholder.com/52/507ea8/fff?text='+u.username[0]}">
-      <div><div class="name">${u.username}</div><div class="last">${online?'<span class="online">online</span>':new Date(u.last_seen).toLocaleTimeString('uz',{hour:'2-digit',minute:'2-digit'})}</div></div>`;
-    el.onclick=()=>openChat(u.username,u.avatar_url); list.appendChild(el);
-  });
+async function updateOnline() { 
+  if (me) await supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', me.id); 
 }
 
-function openChat(name,avatar=''){
-  currentChat=name;
-  document.getElementById('chatName').textContent=name;
-  document.getElementById('chatAvatar').src=avatar||'https://via.placeholder.com/42';
+async function searchUsers(q) {
+  const list = document.getElementById('userList');
+  if (q.length < 2) { list.innerHTML = '<p style="text-align:center;padding:60px;color:#777;">Ism kiriting...</p>'; return; }
+  try {
+    const { data } = await supabase.from('profiles').select('username,avatar_url,last_seen').ilike('username', `%${q}%`).neq('id', me.id);
+    list.innerHTML = '';
+    data?.forEach(u => {
+      const online = (Date.now() - new Date(u.last_seen)) / 60000 < 3;
+      const el = document.createElement('div'); el.className = 'user-item';
+      el.innerHTML = `<img src="${u.avatar_url || 'https://via.placeholder.com/52/507ea8/fff?text=' + u.username[0]}">
+        <div><div class="name">${u.username}</div><div class="last">${online ? '<span class="online">online</span>' : new Date(u.last_seen).toLocaleTimeString('uz', { hour: '2-digit', minute: '2-digit' })}</div></div>`;
+      el.onclick = () => openChat(u.username, u.avatar_url); 
+      list.appendChild(el);
+    });
+  } catch (err) {
+    list.innerHTML = '<p style="text-align:center;padding:60px;color:red;">Qidirishda xato: ' + err.message + '</p>';
+  }
+}
+
+function openChat(name, avatar = '') {
+  currentChat = name;
+  document.getElementById('chatName').textContent = name;
+  document.getElementById('chatAvatar').src = avatar || 'https://via.placeholder.com/42';
   show('chatStep');
-  document.getElementById('messages').innerHTML='<div class="loading">Yuklanmoqda...</div>';
+  document.getElementById('messages').innerHTML = '<div class="loading">Yuklanmoqda...</div>';
   loadMessages();
-  history.pushState({page:'chat',user:name},'');
+  history.pushState({ page: 'chat', user: name }, '');
 }
 
-async function loadMessages(){
-  const chatId=[myUsername,currentChat].sort().join('_');
-  const {data}=await supabase.from('messages').select().eq('chat_id',chatId).order('created_at',{ascending:true});
-  const cont=document.getElementById('messages'); cont.innerHTML='';
-  data.forEach(addMessage);
-  supabase.channel('msg').on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:`chat_id=eq.${chatId}`},p=>addMessage(p.new)).subscribe();
+async function loadMessages() {
+  const chatId = [myUsername, currentChat].sort().join('_');
+  try {
+    const { data } = await supabase.from('messages').select().eq('chat_id', chatId).order('created_at', { ascending: true });
+    const cont = document.getElementById('messages'); cont.innerHTML = '';
+    data.forEach(addMessage);
+    supabase.channel('msg').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, p => addMessage(p.new)).subscribe();
+  } catch (err) {
+    document.getElementById('messages').innerHTML = '<div class="loading" style="color:red;">Xabar yuklashda xato: ' + err.message + '</div>';
+  }
 }
 
-function addMessage(m){
-  const isMe=m.sender===myUsername;
-  const div=document.createElement('div'); div.className=`msg ${isMe?'sent':'received'}`;
-  div.innerHTML = m.text + `<div class="msg-time">${new Date(m.created_at).toLocaleTimeString('uz',{hour:'2-digit',minute:'2-digit'})}</div>`;
+function addMessage(m) {
+  const isMe = m.sender === myUsername;
+  const div = document.createElement('div'); div.className = `msg ${isMe ? 'sent' : 'received'}`;
+  div.innerHTML = m.text + `<div class="msg-time">${new Date(m.created_at).toLocaleTimeString('uz', { hour: '2-digit', minute: '2-digit' })}</div>`;
   document.getElementById('messages').appendChild(div);
-  div.scrollIntoView({behavior:'smooth'});
-  div.querySelectorAll('img').forEach(img=>img.onclick=()=>{document.getElementById('modalImg').src=img.src;document.getElementById('imageModal').style.display='flex';});
+  div.scrollIntoView({ behavior: 'smooth' });
+  div.querySelectorAll('img').forEach(img => img.onclick = () => { document.getElementById('modalImg').src = img.src; document.getElementById('imageModal').style.display = 'flex'; });
 }
 
-async function sendMsg(){
-  const text=document.getElementById('msgInput').value.trim();
-  if(!text||!currentChat) return;
-  const chatId=[myUsername,currentChat].sort().join('_');
-  await supabase.from('messages').insert({chat_id:chatId,sender:myUsername,text});
-  document.getElementById('msgInput').value='';
+async function sendMsg() {
+  const text = document.getElementById('msgInput').value.trim();
+  if (!text || !currentChat) return;
+  const chatId = [myUsername, currentChat].sort().join('_');
+  try {
+    await supabase.from('messages').insert({ chat_id: chatId, sender: myUsername, text });
+    document.getElementById('msgInput').value = '';
+  } catch (err) {
+    alert('Xabar yuborishda xato: ' + err.message);
+  }
 }
 
-async function sendImage(e){
-  const file=e.target.files[0]; if(!file||!currentChat) return;
-  const chatId=[myUsername,currentChat].sort().join('_');
-  const path=`${me.id}/${Date.now()}.${file.name.split('.').pop()}`;
-  await supabase.storage.from('chat_images').upload(path,file);
-  const url=supabase.storage.from('chat_images').getPublicUrl(path).data.publicUrl;
-  await supabase.from('messages').insert({chat_id:chatId,sender:myUsername,text:`<img src="${url}" style="max-width:100%;border-radius:12px;margin:6px 0;">`});
+async function sendImage(e) {
+  const file = e.target.files[0]; if (!file || !currentChat) return;
+  const chatId = [myUsername, currentChat].sort().join('_');
+  try {
+    const path = `${me.id}/${Date.now()}.${file.name.split('.').pop()}`;
+    const { error: uploadError } = await supabase.storage.from('chat_images').upload(path, file);
+    if (uploadError) throw uploadError;
+    const { data } = supabase.storage.from('chat_images').getPublicUrl(path);
+    await supabase.from('messages').insert({ chat_id: chatId, sender: myUsername, text: `<img src="${data.publicUrl}" style="max-width:100%;border-radius:12px;margin:6px 0;">` });
+  } catch (err) {
+    alert('Rasm yuborishda xato: ' + err.message);
+  }
 }
 
-function backToUsers(){ currentChat=null; show('usersStep'); }
+function backToUsers() { currentChat = null; show('usersStep'); }
 
-// Sessiyani har doim tiklash – ENG MUHIM
-(async()=>{
+async function signOut() {
+  await supabase.auth.signOut();
+  location.reload();
+}
+
+// Inicializatsiya
+(async () => {
   me = await recoverSession();
-  if(me){
-    const {data}=await supabase.from('profiles').select('username').eq('id',me.id).single();
-    if(data?.username){ myUsername=data.username; show('usersStep'); updateOnline(); setInterval(updateOnline,25000); }
-    else show('profileStep');
+  if (me) {
+    try {
+      const { data } = await supabase.from('profiles').select('username').eq('id', me.id).single();
+      if (data?.username) { myUsername = data.username; show('usersStep'); updateOnline(); setInterval(updateOnline, 25000); }
+      else show('profileStep');
+    } catch (err) {
+      console.error('Profile load error:', err);
+      show('profileStep');
+    }
   } else show('authStep');
 })();
 
-supabase.auth.onAuthStateChange(async(event,session)=>{
-  if(event==='SIGNED_IN'||event==='TOKEN_REFRESHED'){
-    me=session.user;
-    const {data}=await supabase.from('profiles').select('username').eq('id',me.id).single();
-    if(data?.username){ myUsername=data.username; show('usersStep'); updateOnline(); setInterval(updateOnline,25000); }
-    else show('profileStep');
+supabase.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+    me = session.user;
+    try {
+      const { data } = await supabase.from('profiles').select('username').eq('id', me.id).single();
+      if (data?.username) { myUsername = data.username; show('usersStep'); updateOnline(); setInterval(updateOnline, 25000); }
+      else show('profileStep');
+    } catch (err) {
+      console.error('Auth change error:', err);
+    }
   }
 });
 
-window.onpopstate=e=>{
-  if(e.state?.page==='chat') openChat(e.state.user);
-  else if(e.state?.page==='usersStep') show('usersStep');
+window.onpopstate = e => {
+  if (e.state?.page === 'chat') openChat(e.state.user);
+  else if (e.state?.page === 'usersStep') show('usersStep');
 };
 
-if(location.hash.includes('access_token')) setTimeout(()=>{history.replaceState({page:'usersStep'},'');location.hash='';},800);
+// Magic link hash ni tozalash
+if (location.hash.includes('access_token')) setTimeout(() => { history.replaceState({ page: 'usersStep' }, ''); location.hash = ''; }, 800);
+
 </script>
 </body>
 </html>
