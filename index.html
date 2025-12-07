@@ -22,37 +22,37 @@
     .received{background:#fff;align-self:flex-start;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
     .input-bar{display:flex;padding:10px;background:#f0f0f0;gap:10px;}
     .input-bar input{flex:1;}
-    .status{margin-top:15px;font-weight:bold;}
+    .status{margin-top:15px;font-weight:bold;color:#507ea8;}
   </style>
 </head>
 <body>
 <div class="app">
 
-  <!-- Telefon kirish -->
+  <!-- 1. Telefon kirish -->
   <div id="phoneStep">
     <div class="header">OrbicXs Global</div>
     <div class="content">
       <h2>Telefon raqamingiz</h2>
-      <input id="phone" placeholder="+998901234567" type="tel">
+      <input id="phone" placeholder="+998901234567" type="tel" value="+998">
       <button onclick="sendSMS()">KOD YUBORISH</button>
       <div style="margin-top:20px">
-        <input id="otp" placeholder="6 raqamli kod" maxlength="6">
+        <input id="otp" placeholder="6 raqamli kod" maxlength="6" type="number">
         <button onclick="verifySMS()">TASDIQLASH</button>
       </div>
       <p id="status" class="status"></p>
     </div>
   </div>
 
-  <!-- Profil -->
+  <!-- 2. Ism kiritish -->
   <div id="profileStep" class="hidden">
-    <div class="header"><span class="back" onclick="signOut()">Back</span>Ismingiz</div>
+    <div class="header"><span class="back" onclick="signOut()">Back</span>Ismingizni kiriting</div>
     <div class="content">
       <input id="username" placeholder="Masalan: Jamshid">
       <button onclick="saveAndEnter()">SAQLASH VA KIRISH</button>
     </div>
   </div>
 
-  <!-- Chat ro'yxati -->
+  <!-- 3. Chat ro'yxati -->
   <div id="chatList" class="hidden">
     <div class="header">Xabarlar</div>
     <div style="padding:20px">
@@ -60,7 +60,7 @@
     </div>
   </div>
 
-  <!-- Chat -->
+  <!-- 4. Chat oynasi -->
   <div id="chatWindow" class="hidden">
     <div class="header"><span class="back" onclick="backToList()">Back</span><span id="chatTitle"></span></div>
     <div class="messages" id="messages"></div>
@@ -80,30 +80,32 @@
 
   let me = null, currentChat = null;
 
-  // SMS YUBORISH – 100% ishlaydi!
+  // SMS yuborish (Brevo orqali haqiqiy SMS!)
   async function sendSMS() {
     const phone = document.getElementById('phone').value.trim();
-    if (!phone.startsWith('+')) {
-      document.getElementById('status').innerHTML = '<span style="color:red">Telefon + bilan boshlanishi kerak!</span>';
+    if (!phone.startsWith('+998') || phone.length < 13) {
+      document.getElementById('status').innerHTML = '<span style="color:red">To‘g‘ri raqam kiriting (+998 bilan)</span>';
       return;
     }
 
-    const code = Math.floor(100000 + Math.random() * 900000);
-    localStorage.setItem('otp_code', code);
-    localStorage.setItem('user_phone', phone);
+    document.getElementById('status').innerHTML = 'SMS yuborilmoqda...';
 
-    document.getElementById('status').innerHTML = '<span style="color:#666">Yuborilmoqda...</span>';
+    const code = Math.floor(100000 + Math.random() * 900000);
+    localStorage.setItem('temp_otp', code);
+    localStorage.setItem('user_phone', phone);
 
     const { error } = await supabase.rpc('send_sms', { phone, code });
 
-    document.getElementById('status').innerHTML = error
+    document.getElementById('status').innerHTML = error 
       ? `<span style="color:red">Xato: ${error.message}</span>`
-      : `<span style="color:green">Kod ${phone} ga yuborildi! 5-10 sekund ichida keladi</span>`;
+      : `<span style="color:green">Kod ${phone} ga yuborildi! Tekshiring</span>`;
   }
 
+  // Kod tekshirish
   function verifySMS() {
     const input = document.getElementById('otp').value.trim();
-    if (input === localStorage.getItem('otp_code')) {
+    if (input === localStorage.getItem('temp_otp')) {
+      localStorage.removeItem('temp_otp');
       document.getElementById('phoneStep').classList.add('hidden');
       document.getElementById('profileStep').classList.remove('hidden');
     } else {
@@ -111,6 +113,7 @@
     }
   }
 
+  // Profil saqlash
   async function saveAndEnter() {
     const username = document.getElementById('username').value.trim();
     if (!username) return alert('Ism kiriting!');
@@ -145,7 +148,7 @@
     list.innerHTML = '';
     users?.forEach(u => {
       const div = document.createElement('div');
-      div.style = 'padding:18px;border-bottom:1px solid #eee;cursor:pointer;font-size:18px;background:#f9f9f9;';
+      div.style = 'padding:18px;border-bottom:1px solid #eee;cursor:pointer;font-size:18px;background:#f9f9f9;border-radius:8px;margin:8px 0;';
       div.textContent = u.username;
       div.onclick = () => openChat(u.phone, u.username);
       list.appendChild(div);
@@ -174,13 +177,13 @@
     });
     box.scrollTop = box.scrollHeight;
 
-    supabase.channel('msg').on('postgres_changes', {
+    supabase.channel(`chat_${chatId}`).on('postgres_changes', {
       event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}`
-    }, p => {
-      if (p.new.sender_phone !== me.phone) {
+    }, payload => {
+      if (payload.new.sender_phone !== me.phone) {
         const div = document.createElement('div');
         div.className = 'msg received';
-        div.textContent = p.new.text;
+        div.textContent = payload.new.text;
         box.appendChild(div);
         box.scrollTop = box.scrollHeight;
       }
@@ -200,7 +203,6 @@
       text
     });
     input.value = '';
-    loadMessages();
   }
 
   function backToList() {
