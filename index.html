@@ -22,6 +22,7 @@
     .received{background:#fff;align-self:flex-start;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
     .input-bar{display:flex;padding:10px;background:#f0f0f0;gap:10px;}
     .input-bar input{flex:1;}
+    .status{margin-top:15px;font-weight:bold;}
   </style>
 </head>
 <body>
@@ -38,7 +39,7 @@
         <input id="otp" placeholder="6 raqamli kod" maxlength="6">
         <button onclick="verifySMS()">TASDIQLASH</button>
       </div>
-      <p id="status" style="margin-top:15px;font-weight:bold;"></p>
+      <p id="status" class="status"></p>
     </div>
   </div>
 
@@ -60,12 +61,12 @@
     </div>
   </div>
 
-  <!-- Chat -->
+  <!-- Chat oynasi -->
   <div id="chatWindow" class="hidden">
     <div class="header"><span class="back" onclick="backToList()">Back</span><span id="chatTitle"></span></div>
     <div class="messages" id="messages"></div>
     <div class="input-bar">
-      <input id="msgInput" placeholder="Xabar yozing...">
+      <input id="msgInput" placeholder="Xabar yozing..." onkeypress="if(event.key==='Enter') sendMessage()">
       <button onclick="sendMessage()">Send</button>
     </div>
   </div>
@@ -80,26 +81,35 @@
 
   let me = null, currentChat = null;
 
+  // SMS YUBORISH – nomi "sms" bo‘lishi shart!
   async function sendSMS() {
     const phone = document.getElementById('phone').value.trim();
-    if (!phone.startsWith('+')) return alert('Telefon + bilan boshlanishi kerak!');
+    if (!phone.startsWith('+')) {
+      document.getElementById('status').innerHTML = '<span style="color:red">Telefon + bilan boshlanishi kerak!</span>';
+      return;
+    }
 
     const code = Math.floor(100000 + Math.random() * 900000);
     localStorage.setItem('otp_code', code);
     localStorage.setItem('user_phone', phone);
 
-    const { error } = await supabase.functions.invoke('brevo-sms', {
+    document.getElementById('status').innerHTML = '<span style="color:#666">Yuborilmoqda...</span>';
+
+    const { data, error } = await supabase.functions.invoke('sms', {
       body: { phone, code }
     });
 
-    document.getElementById('status').innerHTML = error 
-      ? `<span style="color:red">Xato: ${error.message}</span>`
-      : `<span style="color:green">Kod ${phone} ga yuborildi!</span>`;
+    if (error) {
+      document.getElementById('status').innerHTML = `<span style="color:red">Xato: ${error.message}</span>`;
+    } else {
+      document.getElementById('status').innerHTML = `<span style="color:green">Kod ${phone} ga yuborildi!</span>`;
+    }
   }
 
   function verifySMS() {
-    const input = document.getElementById('otp').value;
-    if (input == localStorage.getItem('otp_code')) {
+    const input = document.getElementById('otp').value.trim();
+    const saved = localStorage.getItem('otp_code');
+    if (input === saved) {
       document.getElementById('phoneStep').classList.add('hidden');
       document.getElementById('profileStep').classList.remove('hidden');
     } else {
@@ -109,7 +119,7 @@
 
   async function saveAndEnter() {
     const username = document.getElementById('username').value.trim();
-    if (!username) return alert('Ism kiriting');
+    if (!username) return alert('Ism kiriting!');
 
     const phone = localStorage.getItem('user_phone');
     await supabase.from('profiles').upsert({ phone, username }, { onConflict: 'phone' });
@@ -132,7 +142,7 @@
     });
 
     if (phones.size === 0) {
-      document.getElementById('users').innerHTML = '<p>Hech kim bilan yozishmadingiz</p>';
+      document.getElementById('users').innerHTML = '<p style="text-align:center;color:#777;">Hali hech kim bilan yozishmadingiz</p>';
       return;
     }
 
@@ -141,7 +151,7 @@
     list.innerHTML = '';
     users?.forEach(u => {
       const div = document.createElement('div');
-      div.style = 'padding:15px;border-bottom:1px solid #eee;cursor:pointer;background:#f9f9f9';
+      div.style = 'padding:18px;border-bottom:1px solid #eee;cursor:pointer;background:#f9f9f9;font-size:18px;';
       div.textContent = u.username;
       div.onclick = () => openChat(u.phone, u.username);
       list.appendChild(div);
@@ -161,6 +171,7 @@
     const chatId = [me.phone, currentChat].sort().join('_');
     const { data } = await supabase.from('messages').select().eq('chat_id', chatId).order('id');
     const box = document.getElementById('messages');
+    box.innerHTML = '';
     data.forEach(m => {
       const div = document.createElement('div');
       div.className = m.sender_phone === me.phone ? 'msg sent' : 'msg received';
@@ -185,7 +196,8 @@
   async function sendMessage() {
     const input = document.getElementById('msgInput');
     const text = input.value.trim();
-    if (!text) return;
+    if (!text || !currentChat) return;
+
     const chatId = [me.phone, currentChat].sort().join('_');
     await supabase.from('messages').insert({
       chat_id: chatId,
@@ -194,7 +206,6 @@
       text
     });
     input.value = '';
-    loadMessages();
   }
 
   function backToList() {
@@ -209,7 +220,7 @@
   }
 
   function searchUsers(q) {
-    // Keyinchalik qo‘shiladi
+    // Keyinchalik to‘liq qidiruv qo‘shiladi
   }
 </script>
 </body>
