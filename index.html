@@ -80,6 +80,7 @@
 
   let me = null, currentChat = null;
 
+  // SMS YUBORISH – Brevo API key ichida
   async function sendSMS() {
     const phone = document.getElementById('phone').value.trim();
     if (!phone.startsWith('+')) {
@@ -97,7 +98,7 @@
 
     document.getElementById('status').innerHTML = error
       ? `<span style="color:red">Xato: ${error.message}</span>`
-      : `<span style="color:green">Kod ${phone} ga yuborildi!</span>`;
+      : `<span style="color:green">Kod ${phone} ga yuborildi! 5-10 sekund ichida keladi</span>`;
   }
 
   function verifySMS() {
