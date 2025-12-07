@@ -1,1 +1,220 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OrbicXs – SMS Chat</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif;}
+    body{background:#f0f0f0;display:flex;justify-content:center;align-items:center;height:100vh;}
+    .app{max-width:420px;width:100%;background:#fff;height:95vh;border-radius:20px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.3);display:flex;flex-direction:column;}
+    .header{background:#507ea8;color:#fff;padding:20px;text-align:center;font-size:22px;position:relative;}
+    .back{position:absolute;left:15px;top:15px;font-size:28px;cursor:pointer;}
+    .content{padding:40px 30px;text-align:center;flex:1;display:flex;flex-direction:column;justify-content:center;}
+    input,button{width:100%;padding:16px;margin:12px 0;border-radius:12px;border:none;font-size:18px;}
+    input{background:#f5f5f5;text-align:center;}
+    button{background:#507ea8;color:#fff;cursor:pointer;font-weight:bold;}
+    .hidden{display:none;}
+    .messages{flex:1;overflow-y:auto;padding:20px;background:#e5ddd5;display:flex;flex-direction:column;gap:12px;}
+    .msg{max-width:80%;padding:14px 18px;border-radius:20px;word-wrap:break-word;}
+    .sent{background:#d9fdd3;align-self:flex-end;}
+    .received{background:#fff;align-self:flex-start;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+    .input-bar{display:flex;padding:10px;background:#f0f0f0;gap:10px;}
+    .input-bar input{flex:1;}
+    .status{margin-top:15px;font-weight:bold;color:#507ea8;}
+  </style>
+</head>
+<body>
+<div class="app">
 
+  <!-- 1. Telefon kirish -->
+  <div id="phoneStep">
+    <div class="header">OrbicXs Global</div>
+    <div class="content">
+      <h2>Telefon raqamingiz</h2>
+      <input id="phone" placeholder="+998901234567" type="tel" value="+998">
+      <button onclick="sendSMS()">KOD YUBORISH</button>
+      <div style="margin-top:20px">
+        <input id="otp" placeholder="6 raqamli kod" maxlength="6" type="number">
+        <button onclick="verifySMS()">TASDIQLASH</button>
+      </div>
+      <p id="status" class="status"></p>
+    </div>
+  </div>
+
+  <!-- 2. Ism kiritish -->
+  <div id="profileStep" class="hidden">
+    <div class="header"><span class="back" onclick="signOut()">Back</span>Ismingizni kiriting</div>
+    <div class="content">
+      <input id="username" placeholder="Masalan: Jamshid">
+      <button onclick="saveAndEnter()">SAQLASH VA KIRISH</button>
+    </div>
+  </div>
+
+  <!-- 3. Chat ro'yxati -->
+  <div id="chatList" class="hidden">
+    <div class="header">Xabarlar</div>
+    <div style="padding:20px">
+      <div id="users" style="margin-top:20px"></div>
+    </div>
+  </div>
+
+  <!-- 4. Chat oynasi -->
+  <div id="chatWindow" class="hidden">
+    <div class="header"><span class="back" onclick="backToList()">Back</span><span id="chatTitle"></span></div>
+    <div class="messages" id="messages"></div>
+    <div class="input-bar">
+      <input id="msgInput" placeholder="Xabar yozing..." onkeypress="if(event.key==='Enter') sendMessage()">
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const supabase = window.supabase.createClient(
+    'https://fedtvocdgqhgerzspojg.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlZHR2b2NkZ3FoZ2VyenNwb2pnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwNDM1MjcsImV4cCI6MjA4MDYxOTUyN30.Iv4vajez_sKQAziycpibt6kVThVV-7DQkEBgUAI4s8M'
+  );
+
+  let me = null, currentChat = null;
+
+  // SMS yuborish (Brevo orqali haqiqiy SMS!)
+  async function sendSMS() {
+    const phone = document.getElementById('phone').value.trim();
+    if (!phone.startsWith('+998') || phone.length < 13) {
+      document.getElementById('status').innerHTML = '<span style="color:red">To‘g‘ri raqam kiriting (+998 bilan)</span>';
+      return;
+    }
+
+    document.getElementById('status').innerHTML = 'SMS yuborilmoqda...';
+
+    const code = Math.floor(100000 + Math.random() * 900000);
+    localStorage.setItem('temp_otp', code);
+    localStorage.setItem('user_phone', phone);
+
+    const { error } = await supabase.rpc('send_sms', { phone, code });
+
+    document.getElementById('status').innerHTML = error 
+      ? `<span style="color:red">Xato: ${error.message}</span>`
+      : `<span style="color:green">Kod ${phone} ga yuborildi! Tekshiring</span>`;
+  }
+
+  // Kod tekshirish
+  function verifySMS() {
+    const input = document.getElementById('otp').value.trim();
+    if (input === localStorage.getItem('temp_otp')) {
+      localStorage.removeItem('temp_otp');
+      document.getElementById('phoneStep').classList.add('hidden');
+      document.getElementById('profileStep').classList.remove('hidden');
+    } else {
+      alert('Noto‘g‘ri kod!');
+    }
+  }
+
+  // Profil saqlash
+  async function saveAndEnter() {
+    const username = document.getElementById('username').value.trim();
+    if (!username) return alert('Ism kiriting!');
+
+    const phone = localStorage.getItem('user_phone');
+    await supabase.from('profiles').upsert({ phone, username }, { onConflict: 'phone' });
+
+    me = { phone, username };
+    document.getElementById('profileStep').classList.add('hidden');
+    document.getElementById('chatList').classList.remove('hidden');
+    loadRecentChats();
+  }
+
+  async function loadRecentChats() {
+    const { data } = await supabase.from('messages')
+      .select('sender_phone,receiver_phone')
+      .or(`sender_phone.eq.${me.phone},receiver_phone.eq.${me.phone}`);
+
+    const phones = new Set();
+    data?.forEach(m => {
+      if (m.sender_phone !== me.phone) phones.add(m.sender_phone);
+      if (m.receiver_phone !== me.phone) phones.add(m.receiver_phone);
+    });
+
+    if (phones.size === 0) {
+      document.getElementById('users').innerHTML = '<p style="text-align:center;color:#777;">Hali hech kim bilan yozishmadingiz</p>';
+      return;
+    }
+
+    const { data: users } = await supabase.from('profiles').select('phone,username').in('phone', Array.from(phones));
+    const list = document.getElementById('users');
+    list.innerHTML = '';
+    users?.forEach(u => {
+      const div = document.createElement('div');
+      div.style = 'padding:18px;border-bottom:1px solid #eee;cursor:pointer;font-size:18px;background:#f9f9f9;border-radius:8px;margin:8px 0;';
+      div.textContent = u.username;
+      div.onclick = () => openChat(u.phone, u.username);
+      list.appendChild(div);
+    });
+  }
+
+  function openChat(phone, name) {
+    currentChat = phone;
+    document.getElementById('chatTitle').textContent = name;
+    document.getElementById('chatList').classList.add('hidden');
+    document.getElementById('chatWindow').classList.remove('hidden');
+    document.getElementById('messages').innerHTML = '';
+    loadMessages();
+  }
+
+  async function loadMessages() {
+    const chatId = [me.phone, currentChat].sort().join('_');
+    const { data } = await supabase.from('messages').select().eq('chat_id', chatId).order('id');
+    const box = document.getElementById('messages');
+    box.innerHTML = '';
+    data.forEach(m => {
+      const div = document.createElement('div');
+      div.className = m.sender_phone === me.phone ? 'msg sent' : 'msg received';
+      div.textContent = m.text;
+      box.appendChild(div);
+    });
+    box.scrollTop = box.scrollHeight;
+
+    supabase.channel(`chat_${chatId}`).on('postgres_changes', {
+      event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}`
+    }, payload => {
+      if (payload.new.sender_phone !== me.phone) {
+        const div = document.createElement('div');
+        div.className = 'msg received';
+        div.textContent = payload.new.text;
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
+      }
+    }).subscribe();
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('msgInput');
+    const text = input.value.trim();
+    if (!text || !currentChat) return;
+
+    const chatId = [me.phone, currentChat].sort().join('_');
+    await supabase.from('messages').insert({
+      chat_id: chatId,
+      sender_phone: me.phone,
+      receiver_phone: currentChat,
+      text
+    });
+    input.value = '';
+  }
+
+  function backToList() {
+    document.getElementById('chatWindow').classList.add('hidden');
+    document.getElementById('chatList').classList.remove('hidden');
+    loadRecentChats();
+  }
+
+  function signOut() {
+    localStorage.clear();
+    location.reload();
+  }
+</script>
+</body>
+</html>
