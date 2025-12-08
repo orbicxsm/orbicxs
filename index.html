@@ -73,7 +73,7 @@
 
     <div id="chatStep" class="hidden" style="display:flex;flex-direction:column;height:100vh">
       <div class="chat-header">
-        <div class="back" onclick="backToUsers()">←</div>
+        <div class="back" onclick="backToUsers()">🔙</div>
         <img id="chatAvatar" src="">
         <div class="info">
           <div class="name" id="chatWithName"></div>
@@ -214,7 +214,7 @@
 
     window.uploadImage = async e => {
       const file = e.target.files[0];
-      if (!file || file.size > 50*1024*1024) return alert("Rasm 5MB dan kichik bo‘lsin!");
+      if (!file || file.size > 10*1024*1024) return alert("Rasm 10MB dan kichik bo‘lsin!");
       const chatId = [myUsername, currentChatWith].sort().join('_');
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
