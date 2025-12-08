@@ -18,10 +18,7 @@
     .content input { border: 1px solid #ddd; }
     .content button { background: #0088cc; color: white; border: none; cursor: pointer; }
     .profile-setup { text-align: center; padding: 30px 20px; }
-    .avatar-preview {
-      width: 120px; height: 120px; border-radius: 50%; margin: 20px auto;
-      background: #ddd; object-fit: cover; border: 4px solid #0088cc;
-    }
+    .avatar-preview { width: 120px; height: 120px; border-radius: 50%; margin: 20px auto; background: #ddd; object-fit: cover; border: 4px solid #0088cc; }
     .suggested { color: #666; font-size: 14px; margin: 10px 0; }
     .search input { width: 100%; padding: 12px; border-radius: 25px; border: none; background: #f0f2f5; font-size: 16px; margin: 12px; }
     .user-item { padding: 12px 16px; display: flex; align-items: center; cursor: pointer; border-bottom: 1px solid #eee; }
@@ -84,7 +81,7 @@
     <!-- 4. CHAT -->
     <div id="chatStep" class="hidden" style="display:flex; flex-direction:column; height:100vh;">
       <div class="chat-header">
-        <div class="back" onclick="backToUsers()">⬅️</div>
+        <div class="back" onclick="backToUsers()">Back</div>
         <img id="chatAvatar" src="" />
         <div class="info">
           <div class="name" id="chatWithName"></div>
@@ -93,10 +90,10 @@
       </div>
       <div class="messages" id="messages"></div>
       <div class="input-bar">
-        <div class="attach" onclick="document.getElementById('fileInput').click()">📎</div>
+        <div class="attach" onclick="document.getElementById('fileInput').click()">Attach</div>
         <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="uploadImage(event)" />
         <input type="text" id="msgInput" placeholder="Xabar..." onkeypress="if(event.key==='Enter') sendMsg()" />
-        <button onclick="sendMsg()">↗️</button>
+        <button onclick="sendMsg()">Send</button>
       </div>
     </div>
   </div>
@@ -111,33 +108,23 @@
     let myAvatarUrl = '';
     let currentChatWith = null;
 
-    // 1. Magic Link
     window.sendMagicLink = async () => {
       const email = document.getElementById('email').value.trim();
       if (!email) return status("Email kiriting!", "error");
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: window.location.origin }
-      });
+      const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } });
       if (error) return status(error.message, "error");
       status("Havola yuborildi! Emailni tekshiring");
     };
 
-    // 2. Sessiya tekshirish + Profil ochish
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       user = session.user;
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('username, avatar_url')
-        .eq('id', user.id)
-        .single();
+      const { data: profile } = await supabase.from('profiles').select('username, avatar_url').eq('id', user.id).single();
 
       if (profile?.username) {
         myUsername = profile.username;
-        // TO‘G‘RILANGAN: placeholder to‘g‘ri ishlaydi
         myAvatarUrl = profile.avatar_url || `https://via.placeholder.com/120/cccccc/666666?text=${(myUsername[1]||'?').toUpperCase()}`;
         showUsersList();
       } else {
@@ -149,13 +136,11 @@
       }
     })();
 
-    // Avatar preview
     window.previewAvatar = (e) => {
       const file = e.target.files[0];
       if (file) document.getElementById('avatarPreview').src = URL.createObjectURL(file);
     };
 
-    // Profil saqlash — TO‘G‘RILANGAN
     window.saveProfile = async () => {
       let username = document.getElementById('usernameInput').value.trim();
       if (!username) return alert("Username kiriting!");
@@ -168,24 +153,14 @@
         const file = document.getElementById('avatarInput').files[0];
         const fileExt = file.name.split('.').pop();
         const fileName = `${user.id}.${fileExt}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(fileName, file, { upsert: true });
-
+        const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file, { upsert: true });
         if (!uploadError || uploadError.status === 409) {
           const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
           avatarUrl = data.publicUrl;
         }
       }
 
-      const { error } = await supabase.from('profiles').upsert({
-        id: user.id,
-        username,
-        avatar_url: avatarUrl,
-        email: user.email
-      });
-
+      const { error } = await supabase.from('profiles').upsert({ id: user.id, username, avatar_url: avatarUrl, email: user.email });
       if (error?.code === '23505') return alert("Bu username band!");
       if (error) return alert("Xatolik: " + error.message);
 
@@ -194,32 +169,30 @@
       showUsersList();
     };
 
-    // Foydalanuvchilar ro‘yxati — TO‘G‘RILANGAN placeholder
     async function showUsersList() {
       document.getElementById('profileSetupStep').classList.add('hidden');
       document.getElementById('authStep').classList.add('hidden');
       document.getElementById('usersStep').classList.remove('hidden');
 
       const { data } = await supabase.from('profiles').select('username, avatar_url');
-
       const list = document.getElementById('userList');
       list.innerHTML = '';
 
       data.forEach(u => {
         if (u.username === myUsername) return;
-
         const letter = u.username?.[1] || '?';
         const placeholder = `https://via.placeholder.com/50/ccc/666?text=${letter.toUpperCase()}`;
 
         const div = document.createElement('div');
         div.className = 'user-item';
         div.innerHTML = `
-          <img src="${u.avatar_url || placeholder}" onerror="this.src='${placeholder}'" />
+          <img src="${u.avatar_url || placeholder}" 
+               onerror="this.onerror=null; this.src='${placeholder}'" loading="lazy" />
           <div class="info">
             <div class="name">${u.username}</div>
           </div>
         `;
-        div.onclick = () => openChat(u.username, u.avatar_url || placeholder);
+        div.onclick = () => openChat(u.username, u.avatar_url);
         list.appendChild(div);
       });
     }
@@ -229,7 +202,17 @@
       document.getElementById('usersStep').classList.add('hidden');
       document.getElementById('chatStep').classList.remove('hidden');
       document.getElementById('chatWithName').textContent = username;
-      document.getElementById('chatAvatar').src = avatarUrl || `https://via.placeholder.com/40/ccc/666?text=${username[1]?.toUpperCase() || '?'}`;
+
+      const letter = username[1]?.toUpperCase() || '?';
+      const fallback = `https://via.placeholder.com/40/ccc/666?text=${letter}`;
+
+      const img = document.getElementById('chatAvatar');
+      img.src = avatarUrl || fallback;
+      img.onerror = function() {
+        this.onerror = null;
+        this.src = fallback;
+      };
+
       document.getElementById('messages').innerHTML = '';
       loadMessages();
       history.pushState({ chatWith: username }, '');
@@ -241,60 +224,36 @@
       currentChatWith = null;
     };
 
-    // Xabar jo‘natish
     window.sendMsg = async () => {
       const msg = document.getElementById('msgInput').value.trim();
       if (!msg || !currentChatWith) return;
-
       const chatId = [myUsername, currentChatWith].sort().join('_');
-      await supabase.from('messages').insert({
-        chat_id: chatId,
-        sender: myUsername,
-        text: msg
-      });
+      await supabase.from('messages').insert({ chat_id: chatId, sender: myUsername, text: msg });
       document.getElementById('msgInput').value = '';
     };
 
-    // Rasm jo‘natish
     window.uploadImage = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
       if (file.size > 5*1024*1024) return alert("Rasm 5MB dan kichik bo‘lsin!");
-
       const chatId = [myUsername, currentChatWith].sort().join('_');
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}_${Math.random().toString(36).substr(2,9)}.${fileExt}`;
       const filePath = `chat/${chatId}/${fileName}`;
-
-      const { error } = await supabase.storage
-        .from('chat-images')
-        .upload(filePath, file, { upsert: true });
-
+      await supabase.storage.from('chat-images').upload(filePath, file, { upsert: true });
       const { data } = supabase.storage.from('chat-images').getPublicUrl(filePath);
-
-      await supabase.from('messages').insert({
-        chat_id: chatId,
-        sender: myUsername,
-        text: '',
-        image_url: data.publicUrl
-      });
+      await supabase.from('messages').insert({ chat_id: chatId, sender: myUsername, text: '', image_url: data.publicUrl });
       e.target.value = '';
     };
 
     function loadMessages() {
       if (!currentChatWith) return;
       const chatId = [myUsername, currentChatWith].sort().join('_');
-
-      const channel = supabase.channel(`chat:${chatId}`)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, p => {
-          addMessage(p.new);
-        })
+      supabase.channel(`chat:${chatId}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, p => addMessage(p.new))
         .subscribe();
 
-      supabase.from('messages')
-        .select('*')
-        .eq('chat_id', chatId)
-        .order('created_at', { ascending: true })
+      supabase.from('messages').select('*').eq('chat_id', chatId).order('created_at', { ascending: true })
         .then(({ data }) => data.forEach(addMessage));
     }
 
@@ -302,13 +261,10 @@
       const isSent = m.sender === myUsername;
       const div = document.createElement('div');
       div.className = `msg ${isSent ? 'sent' : 'received'}`;
-
       if (m.image_url) {
-        div.innerHTML = `<img src="${m.image_url}" onclick="window.open(this.src,'_blank')" style="border-radius:12px;" />
-          <div class="msg-time">${new Date(m.created_at).toLocaleTimeString('uz',{hour:'2-digit',minute:'2-digit'})}</div>`;
+        div.innerHTML = `<img src="${m.image_url}" onclick="window.open(this.src,'_blank')" style="border-radius:12px;" /><div class="msg-time">${new Date(m.created_at).toLocaleTimeString('uz',{hour:'2-digit',minute:'2-digit'})}</div>`;
       } else {
-        div.innerHTML = `${m.text}
-          <div class="msg-time">${new Date(m.created_at).toLocaleTimeString('uz',{hour:'2-digit',minute:'2-digit'})}</div>`;
+        div.innerHTML = `${m.text}<div class="msg-time">${new Date(m.created_at).toLocaleTimeString('uz',{hour:'2-digit',minute:'2-digit'})}</div>`;
       }
       document.getElementById('messages').appendChild(div);
       div.scrollIntoView({behavior:'smooth'});
