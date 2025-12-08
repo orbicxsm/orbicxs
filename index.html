@@ -18,7 +18,10 @@
     .content input { border: 1px solid #ddd; }
     .content button { background: #0088cc; color: white; border: none; cursor: pointer; }
     .profile-setup { text-align: center; padding: 30px 20px; }
-    .avatar-preview { width: 120px; height: 120px; border-radius: 50%; margin: 20px auto; background: #ddd; object-fit: cover; border: 4px solid #0088cc; }
+    .avatar-preview {
+      width: 120px; height: 120px; border-radius: 50%; margin: 20px auto;
+      background: #ddd; object-fit: cover; border: 4px solid #0088cc;
+    }
     .suggested { color: #666; font-size: 14px; margin: 10px 0; }
     .search input { width: 100%; padding: 12px; border-radius: 25px; border: none; background: #f0f2f5; font-size: 16px; margin: 12px; }
     .user-item { padding: 12px 16px; display: flex; align-items: center; cursor: pointer; border-bottom: 1px solid #eee; }
@@ -45,7 +48,7 @@
 </head>
 <body>
   <div class="app">
-    <!-- 1. EMAIL KIRISH
+    <!-- 1. EMAIL KIRISH -->
     <div id="authStep">
       <div class="header">OrbicXs</div>
       <div class="content">
@@ -55,7 +58,7 @@
       </div>
     </div>
 
-    2. PROFIL SOZLASH
+    <!-- 2. PROFIL SOZLASH -->
     <div id="profileSetupStep" class="hidden">
       <div class="header">Profilni to‘ldiring</div>
       <div class="profile-setup">
@@ -71,14 +74,14 @@
       </div>
     </div>
 
-    3. FOYDALANUVCHILAR RO‘YXATI
+    <!-- 3. FOYDALANUVCHILAR RO‘YXATI -->
     <div id="usersStep" class="hidden">
       <div class="header">Xabarlar</div>
       <div class="search"><input type="text" placeholder="Qidiruv..." oninput="searchUsers(this.value)" /></div>
       <div class="user-list" id="userList"></div>
     </div>
 
-    4. CHAT
+    <!-- 4. CHAT -->
     <div id="chatStep" class="hidden" style="display:flex; flex-direction:column; height:100vh;">
       <div class="chat-header">
         <div class="back" onclick="backToUsers()">Back</div>
@@ -108,7 +111,7 @@
     let myAvatarUrl = '';
     let currentChatWith = null;
 
-    // Magic Link
+    // 1. Magic Link
     window.sendMagicLink = async () => {
       const email = document.getElementById('email').value.trim();
       if (!email) return status("Email kiriting!", "error");
@@ -120,7 +123,7 @@
       status("Havola yuborildi! Emailni tekshiring");
     };
 
-    // Sessiya + Profil
+    // 2. Sessiya tekshirish + Profil ochish
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -134,6 +137,7 @@
 
       if (profile?.username) {
         myUsername = profile.username;
+        // TO‘G‘RILANGAN: placeholder to‘g‘ri ishlaydi
         myAvatarUrl = profile.avatar_url || `https://via.placeholder.com/120/cccccc/666666?text=${(myUsername[1]||'?').toUpperCase()}`;
         showUsersList();
       } else {
@@ -145,12 +149,13 @@
       }
     })();
 
+    // Avatar preview
     window.previewAvatar = (e) => {
       const file = e.target.files[0];
       if (file) document.getElementById('avatarPreview').src = URL.createObjectURL(file);
-    });
+    };
 
-    // AVATARNI TO‘G‘RI YUKLASH (bu joy o‘zgartirildi)
+    // Profil saqlash — TO‘G‘RILANGAN
     window.saveProfile = async () => {
       let username = document.getElementById('usernameInput').value.trim();
       if (!username) return alert("Username kiriting!");
@@ -159,22 +164,17 @@
 
       let avatarUrl = `https://via.placeholder.com/120/cccccc/666666?text=${username[1].toUpperCase()}`;
 
-      const fileInput = document.getElementById('avatarInput');
-      if (fileInput.files[0]) {
-        const file = fileInput.files[0];
+      if (document.getElementById('avatarInput').files[0]) {
+        const file = document.getElementById('avatarInput').files[0];
         const fileExt = file.name.split('.').pop();
-        // MUHIM: user.id papkasiga joylaymiz → policy ishlaydi
-        const filePath = `${user.id}/${user.id}.${fileExt}`;
+        const fileName = `${user.id}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
           .from('avatars')
-          .upload(filePath, file, { upsert: true });
+          .upload(fileName, file, { upsert: true });
 
-        if (uploadError && uploadError.status !== 409) {
-          console.error("Avatar yuklash xatosi:", uploadError);
-          alert("Avatar yuklanmadi: " + uploadError.message);
-        } else {
-          const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+        if (!uploadError || uploadError.status === 409) {
+          const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
           avatarUrl = data.publicUrl;
         }
       }
@@ -194,18 +194,20 @@
       showUsersList();
     };
 
-    // Qolgan barcha kodlar o‘zgarmadi (faqat placeholderlarni biroz tozaladim)
+    // Foydalanuvchilar ro‘yxati — TO‘G‘RILANGAN placeholder
     async function showUsersList() {
       document.getElementById('profileSetupStep').classList.add('hidden');
       document.getElementById('authStep').classList.add('hidden');
       document.getElementById('usersStep').classList.remove('hidden');
 
       const { data } = await supabase.from('profiles').select('username, avatar_url');
+
       const list = document.getElementById('userList');
       list.innerHTML = '';
 
       data.forEach(u => {
         if (u.username === myUsername) return;
+
         const letter = u.username?.[1] || '?';
         const placeholder = `https://via.placeholder.com/50/ccc/666?text=${letter.toUpperCase()}`;
 
@@ -239,9 +241,11 @@
       currentChatWith = null;
     };
 
+    // Xabar jo‘natish
     window.sendMsg = async () => {
       const msg = document.getElementById('msgInput').value.trim();
       if (!msg || !currentChatWith) return;
+
       const chatId = [myUsername, currentChatWith].sort().join('_');
       await supabase.from('messages').insert({
         chat_id: chatId,
@@ -251,6 +255,7 @@
       document.getElementById('msgInput').value = '';
     };
 
+    // Rasm jo‘natish
     window.uploadImage = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -261,7 +266,10 @@
       const fileName = `${Date.now()}_${Math.random().toString(36).substr(2,9)}.${fileExt}`;
       const filePath = `chat/${chatId}/${fileName}`;
 
-      await supabase.storage.from('chat-images').upload(filePath, file, { upsert: true });
+      const { error } = await supabase.storage
+        .from('chat-images')
+        .upload(filePath, file, { upsert: true });
+
       const { data } = supabase.storage.from('chat-images').getPublicUrl(filePath);
 
       await supabase.from('messages').insert({
@@ -277,7 +285,7 @@
       if (!currentChatWith) return;
       const chatId = [myUsername, currentChatWith].sort().join('_');
 
-      supabase.channel(`chat:${chatId}`)
+      const channel = supabase.channel(`chat:${chatId}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, p => {
           addMessage(p.new);
         })
