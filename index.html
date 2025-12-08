@@ -65,10 +65,9 @@
       </div>
     </div>
 
-    <!-- QIDIRUV + CHAT RO‘YXATI (faqat mavjud chatlar) -->
     <div id="usersStep" class="hidden">
       <div class="header">Xabarlar</div>
-      <div class="search"><input type="text" placeholder="Qidiruv..." oninput="searchUsers(this.value)"></div>
+      <div class="search"><input type="text" id="searchInput" placeholder="Yangi odam qidiring yoki chatni toping..." oninput="performSearch(this.value)"></div>
       <div class="user-list" id="userList"></div>
     </div>
 
@@ -162,20 +161,8 @@
       showUsersList();
     };
 
-    // YANGI VERSIYA: Faqat mavjud chatlar chiqadi
-    async function showUsersList() {
-      document.getElementById('profileSetupStep').classList.add('hidden');
-      document.getElementById('authStep').classList.add('hidden');
-      document.getElementById('usersStep').classList.remove('hidden');
-
-      // Bildirishnoma ruxsat so‘rash
-      if (Notification.permission === 'default') {
-        Notification.requestPermission().then(p => { if (p === 'granted') subscribeToPush(); });
-      } else if (Notification.permission === 'granted') {
-        subscribeToPush();
-      }
-
-      // Mavjud chatlarni messages jadvalidan olamiz
+    // Mavjud chatlarni yuklash
+    async function loadExistingChats() {
       const { data: messages } = await supabase
         .from('messages')
         .select('chat_id')
@@ -192,17 +179,12 @@
       list.innerHTML = '';
 
       if (uniqueChats.size === 0) {
-        list.innerHTML = '<div style="text-align:center;color:#666;padding:20px">Hozircha hech kim bilan yozishmadingiz</div>';
+        list.innerHTML = '<div style="text-align:center;color:#666;padding:40px;font-size:14px">Hozircha hech kim bilan yozishmadingiz<br><small>Qidiruv orqali yangi odam toping</small></div>';
         return;
       }
 
       for (const username of uniqueChats) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('username, avatar_url')
-          .eq('username', username)
-          .single();
-
+        const { data: profile } = await supabase.from('profiles').select('username, avatar_url').eq('username', username).single();
         if (!profile) continue;
 
         const letter = (profile.username || '@?')[1].toUpperCase();
@@ -210,6 +192,7 @@
 
         const div = document.createElement('div');
         div.className = 'user-item';
+        div.dataset.username = profile.username;
         div.innerHTML = `
           <img src="${profile.avatar_url || placeholder}" onerror="this.onerror=null;this.src='${placeholder}'" loading="lazy">
           <div class="info"><div class="name">${profile.username}</div></div>
@@ -217,18 +200,76 @@
         div.onclick = () => openChat(profile.username, profile.avatar_url || placeholder);
         list.appendChild(div);
       }
-
-      document.querySelector('.search input').value = '';
     }
 
-    // Qidiruv faqat mavjud chatlar bo‘yicha
-    function searchUsers(query) {
+    // Qidiruv — yangi odamni topadi + mavjud chatlarni filtrlaydi
+    async function performSearch(query) {
       const lowerQuery = query.toLowerCase().trim();
-      const items = document.querySelectorAll('#userList .user-item');
+      const list = document.getElementById('userList');
+
+      if (lowerQuery === '') {
+        await loadExistingChats();
+        return;
+      }
+
+      // Mavjud chatlarda qidirish
+      let foundInChats = false;
+      const items = list.querySelectorAll('.user-item');
       items.forEach(item => {
-        const name = item.querySelector('.name').textContent.toLowerCase();
-        item.style.display = (name.includes(lowerQuery) || lowerQuery === '') ? 'flex' : 'none';
+        const name = (item.dataset.username || '').toLowerCase();
+        if (name.includes(lowerQuery)) {
+          item.style.display = 'flex';
+          foundInChats = true;
+        } else {
+          item.style.display = 'none';
+        }
       });
+
+      // Agar chatda topilmasa — yangi odamni qidiring
+      if (!foundInChats && lowerQuery.startsWith('@') && lowerQuery.length > 2) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('username, avatar_url')
+          .ilike('username', `%${lowerQuery}%`)
+          .neq('username', myUsername)
+          .limit(10);
+
+        list.innerHTML = '';
+        if (profiles && profiles.length > 0) {
+          profiles.forEach(p => {
+            const letter = (p.username || '@?')[1].toUpperCase();
+            const placeholder = `https://via.placeholder.com/50/ccc/666?text=${letter}`;
+            const div = document.createElement('div');
+            div.className = 'user-item search-result';
+            div.innerHTML = `
+              <img src="${p.avatar_url || placeholder}" onerror="this.onerror=null;this.src='${placeholder}'" loading="lazy">
+              <div class="info"><div class="name">${p.username} <small style="color:#0088cc">(yangi)</small></div></div>
+            `;
+            div.onclick = () => {
+              openChat(p.username, p.avatar_url || placeholder);
+              document.getElementById('searchInput').value = '';
+            };
+            list.appendChild(div);
+          });
+        } else {
+          list.innerHTML = '<div style="text-align:center;color:#999;padding:30px">Hech kim topilmadi</div>';
+        }
+      }
+    }
+
+    async function showUsersList() {
+      document.getElementById('profileSetupStep').classList.add('hidden');
+      document.getElementById('authStep').classList.add('hidden');
+      document.getElementById('usersStep').classList.remove('hidden');
+
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().then(p => { if (p === 'granted') subscribeToPush(); });
+      } else if (Notification.permission === 'granted') {
+        subscribeToPush();
+      }
+
+      await loadExistingChats();
+      if (document.getElementById('searchInput')) document.getElementById('searchInput').value = '';
     }
 
     function openChat(username, avatarUrl) {
@@ -245,10 +286,9 @@
       document.getElementById('chatStep').classList.add('hidden');
       document.getElementById('usersStep').classList.remove('hidden');
       currentChatWith = null;
-      showUsersList(); // orqaga qaytganda ro‘yxatni yangilaydi
+      showUsersList();
     };
 
-    // Xabar yuborilganda ro‘yxat yangilanadi
     window.sendMsg = async () => {
       const input = document.getElementById('msgInput');
       const text = input.value.trim();
@@ -288,7 +328,7 @@
               tag: 'orbicxs'
             });
           }
-          showUsersList(); // yangi xabar kelsa ro‘yxat yangilanadi
+          showUsersList();
         })
         .subscribe();
 
