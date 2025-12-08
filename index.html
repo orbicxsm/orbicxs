@@ -84,7 +84,7 @@
     <!-- 4. CHAT -->
     <div id="chatStep" class="hidden" style="display:flex; flex-direction:column; height:100vh;">
       <div class="chat-header">
-        <div class="back" onclick="backToUsers()">Back</div>
+        <div class="back" onclick="backToUsers()">⬅️</div>
         <img id="chatAvatar" src="" />
         <div class="info">
           <div class="name" id="chatWithName"></div>
@@ -93,10 +93,10 @@
       </div>
       <div class="messages" id="messages"></div>
       <div class="input-bar">
-        <div class="attach" onclick="document.getElementById('fileInput').click()">Attach</div>
+        <div class="attach" onclick="document.getElementById('fileInput').click()">📎</div>
         <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="uploadImage(event)" />
         <input type="text" id="msgInput" placeholder="Xabar..." onkeypress="if(event.key==='Enter') sendMsg()" />
-        <button onclick="sendMsg()">Send</button>
+        <button onclick="sendMsg()">↗️</button>
       </div>
     </div>
   </div>
