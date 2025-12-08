@@ -259,7 +259,7 @@
     window.uploadImage = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      if (file.size > 5*1024*1024) return alert("Rasm 5MB dan kichik bo‘lsin!");
+      if (file.size > 50*1024*1024) return alert("Rasm 5MB dan kichik bo‘lsin!");
 
       const chatId = [myUsername, currentChatWith].sort().join('_');
       const fileExt = file.name.split('.').pop();
