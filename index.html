@@ -73,7 +73,7 @@
 
     <div id="chatStep" class="hidden" style="display:flex;flex-direction:column;height:100vh">
       <div class="chat-header">
-        <div class="back" onclick="backToUsers()">⬅️</div>
+        <div class="back" onclick="backToUsers()">Orqaga</div>
         <img id="chatAvatar" src="">
         <div class="info">
           <div class="name" id="chatWithName"></div>
@@ -82,10 +82,10 @@
       </div>
       <div class="messages" id="messages"></div>
       <div class="input-bar">
-        <div class="attach" onclick="document.getElementById('fileInput').click()">📎</div>
+        <div class="attach" onclick="document.getElementById('fileInput').click()">Rasm</div>
         <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="uploadImage(event)">
         <input type="text" id="msgInput" placeholder="Xabar..." onkeypress="if(event.key==='Enter') sendMsg()">
-        <button onclick="sendMsg()">↗️</button>
+        <button onclick="sendMsg()">Yuborish</button>
       </div>
     </div>
   </div>
@@ -96,6 +96,18 @@
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let user = null, myUsername = '', currentChatWith = null;
+
+    // Bildirishnoma obunasi
+    async function subscribeToPush() {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      const vapidKey = await fetch('/vapid_public_key.txt').then(r => r.text().trim());
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: vapidKey
+      });
+      await supabase.from('push_subscriptions').upsert({ user_id: user.id, subscription: sub }, { onConflict: 'user_id' });
+    }
 
     window.sendMagicLink = async () => {
       const email = document.getElementById('email').value.trim();
@@ -153,6 +165,14 @@
       document.getElementById('profileSetupStep').classList.add('hidden');
       document.getElementById('authStep').classList.add('hidden');
       document.getElementById('usersStep').classList.remove('hidden');
+
+      // Bildirishnoma ruxsat so‘rash
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().then(p => { if (p === 'granted') subscribeToPush(); });
+      } else if (Notification.permission === 'granted') {
+        subscribeToPush();
+      }
+
       const { data } = await supabase.from('profiles').select('username, avatar_url');
       const list = document.getElementById('userList'); list.innerHTML = '';
       data.forEach(u => {
@@ -209,8 +229,20 @@
       if (!currentChatWith) return;
       const chatId = [myUsername, currentChatWith].sort().join('_');
       supabase.channel(`chat:${chatId}`)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, p => addMessage(p.new))
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, p => {
+          const m = p.new;
+          if (m.sender === myUsername) return addMessage(m);
+          addMessage(m);
+          if (document.hidden && Notification.permission === 'granted') {
+            new Notification(m.sender, {
+              body: m.text || "Yangi rasm",
+              icon: 'https://via.placeholder.com/192/0088cc/ffffff?text=OX',
+              tag: 'orbicxs'
+            });
+          }
+        })
         .subscribe();
+
       supabase.from('messages').select('*').eq('chat_id', chatId).order('created_at', { ascending: true })
         .then(({ data }) => data.forEach(addMessage));
     }
