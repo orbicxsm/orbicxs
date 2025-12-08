@@ -97,6 +97,18 @@
 
     let user = null, myUsername = '', currentChatWith = null;
 
+    // Bildirishnoma obunasi
+    async function subscribeToPush() {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      const vapidKey = await fetch('/vapid_public_key.txt').then(r => r.text().trim());
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: vapidKey
+      });
+      await supabase.from('push_subscriptions').upsert({ user_id: user.id, subscription: sub }, { onConflict: 'user_id' });
+    }
+
     window.sendMagicLink = async () => {
       const email = document.getElementById('email').value.trim();
       if (!email) return status("Email kiriting!", "error");
@@ -149,57 +161,29 @@
       showUsersList();
     };
 
-    // YANGI: Faqat yozishgan odamlar chiqadi
     async function showUsersList() {
       document.getElementById('profileSetupStep').classList.add('hidden');
       document.getElementById('authStep').classList.add('hidden');
       document.getElementById('usersStep').classList.remove('hidden');
 
-      const { data: allMessages } = await supabase
-        .from('messages')
-        .select('chat_id')
-        .or(`sender.eq.${myUsername}`);
-
-      const uniqueChats = new Set();
-      allMessages?.forEach(m => {
-        const [u1, u2] = m.chat_id.split('_');
-        const other = u1 === myUsername ? u2 : u1;
-        uniqueChats.add(other);
-      });
-
-      const list = document.getElementById('userList');
-      list.innerHTML = '';
-
-      for (const username of uniqueChats) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('username, avatar_url')
-          .eq('username', username)
-          .single();
-
-        if (!profile) continue;
-
-        const letter = profile.username[1]?.toUpperCase() || '?';
-        const placeholder = `https://via.placeholder.com/50/ccc/666?text=${letter}`;
-
-        const div = document.createElement('div');
-        div.className = 'user-item';
-        div.innerHTML = `
-          <img src="${profile.avatar_url || placeholder}" onerror="this.onerror=null;this.src='${placeholder}'" loading="lazy">
-          <div class="info"><div class="name">${profile.username}</div></div>
-        `;
-        div.onclick = () => openChat(profile.username, profile.avatar_url || placeholder);
-        list.appendChild(div);
+      // Bildirishnoma ruxsat so‘rash
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().then(p => { if (p === 'granted') subscribeToPush(); });
+      } else if (Notification.permission === 'granted') {
+        subscribeToPush();
       }
 
-      document.querySelector('.search input').value = '';
-    }
-
-    function searchUsers(query) {
-      const q = query.toLowerCase().trim();
-      document.querySelectorAll('#userList .user-item').forEach(item => {
-        const name = item.querySelector('.name').textContent.toLowerCase();
-        item.style.display = name.includes(q) || q === '' ? 'flex' : 'none';
+      const { data } = await supabase.from('profiles').select('username, avatar_url');
+      const list = document.getElementById('userList'); list.innerHTML = '';
+      data.forEach(u => {
+        if (u.username === myUsername) return;
+        const letter = (u.username || '@?')[1].toUpperCase();
+        const placeholder = `https://via.placeholder.com/50/ccc/666?text=${letter}`;
+        const div = document.createElement('div'); div.className = 'user-item';
+        div.innerHTML = `<img src="${u.avatar_url || placeholder}" onerror="this.onerror=null;this.src='${placeholder}'" loading="lazy">
+                         <div class="info"><div class="name">${u.username}</div></div>`;
+        div.onclick = () => openChat(u.username, u.avatar_url || placeholder);
+        list.appendChild(div);
       });
     }
 
@@ -223,13 +207,9 @@
       const input = document.getElementById('msgInput');
       const text = input.value.trim();
       if (!text || !currentChatWith) return;
-
-      constir chatId = [myUsername, currentChatWith].sort().join('_');
+      const chatId = [myUsername, currentChatWith].sort().join('_');
       await supabase.from('messages').insert({ chat_id: chatId, sender: myUsername, text });
       input.value = '';
-
-      // YANGI: Xabar yozilganda ro'yxatni yangilash
-      showUsersList();
     };
 
     window.uploadImage = async e => {
@@ -243,7 +223,6 @@
       const { data } = supabase.storage.from('chat-images').getPublicUrl(filePath);
       await supabase.from('messages').insert({ chat_id: chatId, sender: myUsername, image_url: data.publicUrl });
       e.target.value = '';
-      showUsersList();
     };
 
     function loadMessages() {
@@ -251,8 +230,16 @@
       const chatId = [myUsername, currentChatWith].sort().join('_');
       supabase.channel(`chat:${chatId}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, p => {
-          addMessage(p.new);
-          showUsersList(); // real-time yangilash
+          const m = p.new;
+          if (m.sender === myUsername) return addMessage(m);
+          addMessage(m);
+          if (document.hidden && Notification.permission === 'granted') {
+            new Notification(m.sender, {
+              body: m.text || "Yangi rasm",
+              icon: 'https://via.placeholder.com/192/0088cc/ffffff?text=OX',
+              tag: 'orbicxs'
+            });
+          }
         })
         .subscribe();
 
