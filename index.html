@@ -65,7 +65,6 @@
       </div>
     </div>
 
-    <!-- QIDIRUV + CHAT RO‘YXATI (faqat mavjud chatlar) -->
     <div id="usersStep" class="hidden">
       <div class="header">Xabarlar</div>
       <div class="search"><input type="text" placeholder="Qidiruv..." oninput="searchUsers(this.value)"></div>
@@ -162,7 +161,6 @@
       showUsersList();
     };
 
-    // YANGI VERSIYA: Faqat mavjud chatlar chiqadi
     async function showUsersList() {
       document.getElementById('profileSetupStep').classList.add('hidden');
       document.getElementById('authStep').classList.add('hidden');
@@ -175,59 +173,17 @@
         subscribeToPush();
       }
 
-      // Mavjud chatlarni messages jadvalidan olamiz
-      const { data: messages } = await supabase
-        .from('messages')
-        .select('chat_id')
-        .or(`sender.eq.${myUsername},chat_id.like.%${myUsername}%`);
-
-      const uniqueChats = new Set();
-      messages?.forEach(m => {
-        const [u1, u2] = m.chat_id.split('_');
-        if (u1 === myUsername) uniqueChats.add(u2);
-        if (u2 === myUsername) uniqueChats.add(u1);
-      });
-
-      const list = document.getElementById('userList');
-      list.innerHTML = '';
-
-      if (uniqueChats.size === 0) {
-        list.innerHTML = '<div style="text-align:center;color:#666;padding:20px">Hozircha hech kim bilan yozishmadingiz</div>';
-        return;
-      }
-
-      for (const username of uniqueChats) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('username, avatar_url')
-          .eq('username', username)
-          .single();
-
-        if (!profile) continue;
-
-        const letter = (profile.username || '@?')[1].toUpperCase();
+      const { data } = await supabase.from('profiles').select('username, avatar_url');
+      const list = document.getElementById('userList'); list.innerHTML = '';
+      data.forEach(u => {
+        if (u.username === myUsername) return;
+        const letter = (u.username || '@?')[1].toUpperCase();
         const placeholder = `https://via.placeholder.com/50/ccc/666?text=${letter}`;
-
-        const div = document.createElement('div');
-        div.className = 'user-item';
-        div.innerHTML = `
-          <img src="${profile.avatar_url || placeholder}" onerror="this.onerror=null;this.src='${placeholder}'" loading="lazy">
-          <div class="info"><div class="name">${profile.username}</div></div>
-        `;
-        div.onclick = () => openChat(profile.username, profile.avatar_url || placeholder);
+        const div = document.createElement('div'); div.className = 'user-item';
+        div.innerHTML = `<img src="${u.avatar_url || placeholder}" onerror="this.onerror=null;this.src='${placeholder}'" loading="lazy">
+                         <div class="info"><div class="name">${u.username}</div></div>`;
+        div.onclick = () => openChat(u.username, u.avatar_url || placeholder);
         list.appendChild(div);
-      }
-
-      document.querySelector('.search input').value = '';
-    }
-
-    // Qidiruv faqat mavjud chatlar bo‘yicha
-    function searchUsers(query) {
-      const lowerQuery = query.toLowerCase().trim();
-      const items = document.querySelectorAll('#userList .user-item');
-      items.forEach(item => {
-        const name = item.querySelector('.name').textContent.toLowerCase();
-        item.style.display = (name.includes(lowerQuery) || lowerQuery === '') ? 'flex' : 'none';
       });
     }
 
@@ -245,19 +201,15 @@
       document.getElementById('chatStep').classList.add('hidden');
       document.getElementById('usersStep').classList.remove('hidden');
       currentChatWith = null;
-      showUsersList(); // orqaga qaytganda ro‘yxatni yangilaydi
     };
 
-    // Xabar yuborilganda ro‘yxat yangilanadi
     window.sendMsg = async () => {
       const input = document.getElementById('msgInput');
       const text = input.value.trim();
       if (!text || !currentChatWith) return;
-
       const chatId = [myUsername, currentChatWith].sort().join('_');
       await supabase.from('messages').insert({ chat_id: chatId, sender: myUsername, text });
       input.value = '';
-      showUsersList(); // yangi chat qo‘shiladi
     };
 
     window.uploadImage = async e => {
@@ -271,7 +223,6 @@
       const { data } = supabase.storage.from('chat-images').getPublicUrl(filePath);
       await supabase.from('messages').insert({ chat_id: chatId, sender: myUsername, image_url: data.publicUrl });
       e.target.value = '';
-      showUsersList();
     };
 
     function loadMessages() {
@@ -280,15 +231,15 @@
       supabase.channel(`chat:${chatId}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, p => {
           const m = p.new;
+          if (m.sender === myUsername) return addMessage(m);
           addMessage(m);
-          if (m.sender !== myUsername && document.hidden && Notification.permission === 'granted') {
+          if (document.hidden && Notification.permission === 'granted') {
             new Notification(m.sender, {
               body: m.text || "Yangi rasm",
               icon: 'https://via.placeholder.com/192/0088cc/ffffff?text=OX',
               tag: 'orbicxs'
             });
           }
-          showUsersList(); // yangi xabar kelsa ro‘yxat yangilanadi
         })
         .subscribe();
 
