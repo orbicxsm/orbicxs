@@ -1,130 +1,316 @@
--- 1. Profiles jadvali (foydalanuvchilar)
-create table if not exists public.profiles (
-  id uuid references auth.users not null primary key,
-  username text unique,
-  avatar_url text,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OrbicXs</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0088cc">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box;font-family:'Roboto',sans-serif}
+    body{background:#f0f2f5;display:flex;justify-content:center;min-height:100vh}
+    .app{width:100%;max-width:400px;background:white;height:100vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 0 20px rgba(0,0,0,.1)}
+    .header{background:#0088cc;color:white;padding:16px;font-weight:500;font-size:18px;text-align:center}
+    .content{padding:24px;text-align:center}
+    .content input,.content button{width:100%;padding:14px;margin:12px 0;border-radius:12px;font-size:16px}
+    .content input{border:1px solid #ddd}
+    .content button{background:#0088cc;color:white;border:none;cursor:pointer}
+    .profile-setup{text-align:center;padding:30px 20px}
+    .avatar-preview{width:120px;height:120px;border-radius:50%;margin:20px auto;object-fit:cover;border:4px solid #0088cc}
+    .search input{width:100%;padding:12px;border-radius:25px;border:none;background:#f0f2f5;font-size:16px;margin:12px}
+    .user-item{padding:12px 16px;display:flex;align-items:center;cursor:pointer;border-bottom:1px solid #eee}
+    .user-item:hover{background:#f8f9fa}
+    .user-item img{width:50px;height:50px;border-radius:50%;margin-right:12px;object-fit:cover}
+    .chat-header{background:#0088cc;color:white;padding:14px;display:flex;align-items:center;position:fixed;top:0;width:100%;max-width:400px;z-index:10}
+    .chat-header .back{cursor:pointer;font-size:28px;margin-right:12px}
+    .chat-header img{width:40px;height:40px;border-radius:50%;margin-right:12px;object-fit:cover}
+    .messages{flex:1;overflow-y:auto;padding:16px;padding-top:80px;padding-bottom:90px;background:#efeae2}
+    .msg{max-width:75%;padding:10px 14px;border-radius:18px;margin:8px 0;word-wrap:break-word}
+    .sent{background:#00bfff;color:white;margin-left:auto;border-bottom-right-radius:4px}
+    .received{background:white;color:black;margin-right:auto;border-bottom-left-radius:4px}
+    .msg img{max-width:100%;border-radius:12px;margin:6px 0;cursor:pointer}
+    .msg-time{font-size:11px;color:#999;text-align:right;margin-top:4px}
+    .input-bar{position:fixed;bottom:0;width:100%;max-width:400px;background:white;padding:10px;display:flex;border-top:1px solid #eee}
+    .attach{width:44px;height:44px;background:#f0f2f5;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-right:8px;font-size:20px}
+    .input-bar input[type=text]{flex:1;padding:12px 16px;border:none;background:#f0f2f5;border-radius:25px}
+    .input-bar button{width:44px;height:44px;background:#0088cc;color:white;border:none;border-radius:50%;cursor:pointer}
+    .hidden{display:none !important}
+    .status{margin-top:10px;color:#00aa00}
+    .error{color:#ff4444}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div id="authStep">
+      <div class="header">OrbicXs</div>
+      <div class="content">
+        <input id="email" type="email" placeholder="email@gmail.com">
+        <button onclick="sendMagicLink()">KIRISH</button>
+        <p id="status" class="status"></p>
+      </div>
+    </div>
 
--- Username bo'yicha unikal indeks
-create unique index if not exists profiles_username_idx on public.profiles (lower(username));
+    <div id="profileSetupStep" class="hidden">
+      <div class="header">Profilni to‘ldiring</div>
+      <div class="profile-setup">
+        <img id="avatarPreview" class="avatar-preview" src="https://via.placeholder.com/120/cccccc/666666?text=+">
+        <input type="file" id="avatarInput" accept="image/*" onchange="previewAvatar(event)" style="display:none">
+        <button onclick="document.getElementById('avatarInput').click()" style="padding:10px 20px;background:#0088cc;color:white;border:none;border-radius:12px;cursor:pointer">Rasm tanlash</button>
+        <p class="suggested">Taklif etilgan username:</p>
+        <h3 id="suggestedUsername" style="color:#0088cc"></h3>
+        <input id="usernameInput" type="text" placeholder="Username kiriting (@ bilan)" style="text-align:center;width:80%;padding:12px;border-radius:12px;border:1px solid #ddd">
+        <button onclick="saveProfile()" style="margin-top:20px">SAQLASH VA DAVOM ETISH</button>
+      </div>
+    </div>
 
--- RLS (Row Level Security) yoqish
-alter table public.profiles enable row level security;
+    <!-- QIDIRUV + CHAT RO‘YXATI (faqat mavjud chatlar) -->
+    <div id="usersStep" class="hidden">
+      <div class="header">Xabarlar</div>
+      <div class="search"><input type="text" placeholder="Qidiruv..." oninput="searchUsers(this.value)"></div>
+      <div class="user-list" id="userList"></div>
+    </div>
 
--- Har kim o'z profilini o'qiy oladi
-create policy "Profiles o'qish" on public.profiles
-  for select using (true);
+    <div id="chatStep" class="hidden" style="display:flex;flex-direction:column;height:100vh">
+      <div class="chat-header">
+        <div class="back" onclick="backToUsers()">Orqaga</div>
+        <img id="chatAvatar" src="">
+        <div class="info">
+          <div class="name" id="chatWithName"></div>
+          <div class="status">online</div>
+        </div>
+      </div>
+      <div class="messages" id="messages"></div>
+      <div class="input-bar">
+        <div class="attach" onclick="document.getElementById('fileInput').click()">Rasm</div>
+        <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="uploadImage(event)">
+        <input type="text" id="msgInput" placeholder="Xabar..." onkeypress="if(event.key==='Enter') sendMsg()">
+        <button onclick="sendMsg()">Yuborish</button>
+      </div>
+    </div>
+  </div>
 
--- Faqat o'zi yangilay oladi
-create policy "Profilni yangilash" on public.profiles
-  for update using (auth.uid() = id);
+  <script>
+    const SUPABASE_URL = 'https://osicrbckwwgoybnlhmrh.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zaWNyYmNrd3dnb3libmxobXJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxODE0OTgsImV4cCI6MjA4MDc1NzQ5OH0.FFncYlnJwNklYdM3inCiZn3HATjQXpL5VbFmHxrjipw';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
--- Faqat o'zi qo'sha oladi (birinchi marta)
-create policy "Profil qo'shish" on public.profiles
-  for insert with check (auth.uid() = id);
+    let user = null, myUsername = '', currentChatWith = null;
 
--- 2. Messages jadvali (xabarlar)
-create table if not exists public.messages (
-  id bigint generated by default as identity primary key,
-  chat_id text not null,
-  sender text not null,
-  text text,
-  image_url text,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
+    // Bildirishnoma obunasi
+    async function subscribeToPush() {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      const vapidKey = await fetch('/vapid_public_key.txt').then(r => r.text().trim());
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: vapidKey
+      });
+      await supabase.from('push_subscriptions').upsert({ user_id: user.id, subscription: sub }, { onConflict: 'user_id' });
+    }
 
--- Chat_id va vaqt bo'yicha indeks (tez yuklash uchun)
-create index if not exists messages_chat_id_idx on public.messages (chat_id, created_at desc);
+    window.sendMagicLink = async () => {
+      const email = document.getElementById('email').value.trim();
+      if (!email) return status("Email kiriting!", "error");
+      const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } });
+      if (error) return status(error.message, "error");
+      status("Havola yuborildi! Emailni tekshiring");
+    };
 
--- RLS yoqish
-alter table public.messages enable row level security;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      user = session.user;
+      const { data: profile } = await supabase.from('profiles').select('username, avatar_url').eq('id', user.id).single();
+      if (profile?.username) {
+        myUsername = profile.username;
+        showUsersList();
+      } else {
+        document.getElementById('authStep').classList.add('hidden');
+        document.getElementById('profileSetupStep').classList.remove('hidden');
+        const suggested = '@' + user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+        document.getElementById('suggestedUsername').textContent = suggested;
+        document.getElementById('usernameInput').value = suggested;
+      }
+    })();
 
--- Chat ishtirokchilari xabarlarni ko'ra oladi
-create policy "Xabarlarni o'qish" on public.messages
-  for select using (
-    chat_id = (select lower(concat(sort(array[auth.jwt()->>'username', split_part(chat_id, '_', 1)], array[auth.jwt()->>'username', split_part(chat_id, '_', 2)])))::text || '_' || 
-    lower(concat(sort(array[auth.jwt()->>'username', split_part(chat_id, '_', 2)], array[auth.jwt()->>'username', split_part(chat_id, '_', 1)])))::text))
-    or chat_id like '%' || (auth.jwt()->>'username') || '%'
-  );
+    window.previewAvatar = e => { if (e.target.files[0]) document.getElementById('avatarPreview').src = URL.createObjectURL(e.target.files[0]) };
 
--- Faqat chat ishtirokchilari yozishi mumkin
-create policy "Xabar yozish" on public.messages
-  for insert with check (
-    sender = (auth.jwt()->>'username')
-    and chat_id like '%' || sender || '%'
-  );
+    window.saveProfile = async () => {
+      let username = document.getElementById('usernameInput').value.trim();
+      if (!username) return alert("Username kiriting!");
+      if (!username.startsWith('@')) username = '@' + username;
+      username = username.toLowerCase();
 
--- 3. Push subscriptions (bildirishnomalar uchun)
-create table if not exists public.push_subscriptions (
-  user_id uuid references auth.users not null primary key,
-  subscription jsonb not null,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
+      let avatarUrl = `https://via.placeholder.com/120/cccccc/666666?text=${username[1].toUpperCase()}`;
+      if (document.getElementById('avatarInput').files[0]) {
+        const file = document.getElementById('avatarInput').files[0];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}.${fileExt}`;
+        const { error } = await supabase.storage.from('avatars').upload(fileName, file, { upsert: true });
+        if (!error || error.status === 409) {
+          const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+          avatarUrl = data.publicUrl;
+        }
+      }
 
-alter table public.push_subscriptions enable row level security;
+      const { error } = await supabase.from('profiles').upsert({ id: user.id, username, avatar_url: avatarUrl });
+      if (error?.code === '23505') return alert("Bu username band!");
+      if (error) return alert("Xatolik: " + error.message);
+      myUsername = username;
+      showUsersList();
+    };
 
-create policy "Push o'qish" on public.push_subscriptions
-  for select using (auth.uid() = user_id);
+    // YANGI VERSIYA: Faqat mavjud chatlar chiqadi
+    async function showUsersList() {
+      document.getElementById('profileSetupStep').classList.add('hidden');
+      document.getElementById('authStep').classList.add('hidden');
+      document.getElementById('usersStep').classList.remove('hidden');
 
-create policy "Push qo'shish/yangilash" on public.push_subscriptions
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+      // Bildirishnoma ruxsat so‘rash
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().then(p => { if (p === 'granted') subscribeToPush(); });
+      } else if (Notification.permission === 'granted') {
+        subscribeToPush();
+      }
 
--- 4. Realtime yoqish (Supabase Realtime uchun)
-alter publication supabase_realtime add table public.messages;
-alter publication supabase_realtime add table public.profiles;
+      // Mavjud chatlarni messages jadvalidan olamiz
+      const { data: messages } = await supabase
+        .from('messages')
+        .select('chat_id')
+        .or(`sender.eq.${myUsername},chat_id.like.%${myUsername}%`);
 
--- 5. Storage bucket'lar yaratish (Storage → SQL orqali emas, lekin bu yerda eslatma)
--- Supabase dashboard → Storage da quyidagi bucket'larni yarating:
+      const uniqueChats = new Set();
+      messages?.forEach(m => {
+        const [u1, u2] = m.chat_id.split('_');
+        if (u1 === myUsername) uniqueChats.add(u2);
+        if (u2 === myUsername) uniqueChats.add(u1);
+      });
 
--- Bucket 1: avatars
---   Public: Yes (yoki No + signed URL ishlatish)
---   Allowed MIME types: image/*
+      const list = document.getElementById('userList');
+      list.innerHTML = '';
 
--- Bucket 2: chat-images
---   Public: Yes
---   Allowed MIME types: image/*
+      if (uniqueChats.size === 0) {
+        list.innerHTML = '<div style="text-align:center;color:#666;padding:20px">Hozircha hech kim bilan yozishmadingiz</div>';
+        return;
+      }
 
--- Storage RLS siyosatlari (Storage → Policies da qo'lda qo'shing yoki SQL orqali):
--- avatars uchun:
-create policy "Avatar upload"
-  on storage.objects for insert
-  with check (
-    bucket_id = 'avatars'
-    and (storage.foldername(name))[1] is null
-    and auth.uid()::text = (storage.foldername(name))[1]
-  );
+      for (const username of uniqueChats) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username, avatar_url')
+          .eq('username', username)
+          .single();
 
-create policy "Avatar read"
-  on storage.objects for select
-  using (bucket_id = 'avatars');
+        if (!profile) continue;
 
--- chat-images uchun:
-create policy "Chat image upload"
-  on storage.objects for insert
-  with check (
-    bucket_id = 'chat-images'
-    and (storage.foldername(name))[1] = 'chat'
-  );
+        const letter = (profile.username || '@?')[1].toUpperCase();
+        const placeholder = `https://via.placeholder.com/50/ccc/666?text=${letter}`;
 
-create policy "Chat image read"
-  on storage.objects for select
-  using (bucket_id = 'chat-images');
+        const div = document.createElement('div');
+        div.className = 'user-item';
+        div.innerHTML = `
+          <img src="${profile.avatar_url || placeholder}" onerror="this.onerror=null;this.src='${placeholder}'" loading="lazy">
+          <div class="info"><div class="name">${profile.username}</div></div>
+        `;
+        div.onclick = () => openChat(profile.username, profile.avatar_url || placeholder);
+        list.appendChild(div);
+      }
 
--- Muhim: auth.jwt() da username bo'lishi uchun trigger kerak
--- (Supabase auth.users da username yo'q, shuning uchun profiles dan olinadi)
+      document.querySelector('.search input').value = '';
+    }
 
-create or replace function public.handle_new_user()
-returns trigger as $$
-begin
-  insert into public.profiles (id)
-  values (new.id)
-  on conflict (id) do nothing;
-  return new;
-end;
-$$ language plpgsql security definer;
+    // Qidiruv faqat mavjud chatlar bo‘yicha
+    function searchUsers(query) {
+      const lowerQuery = query.toLowerCase().trim();
+      const items = document.querySelectorAll('#userList .user-item');
+      items.forEach(item => {
+        const name = item.querySelector('.name').textContent.toLowerCase();
+        item.style.display = (name.includes(lowerQuery) || lowerQuery === '') ? 'flex' : 'none';
+      });
+    }
 
--- Trigger yaratish
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure public.handle_new_user();
+    function openChat(username, avatarUrl) {
+      currentChatWith = username;
+      document.getElementById('usersStep').classList.add('hidden');
+      document.getElementById('chatStep').classList.remove('hidden');
+      document.getElementById('chatWithName').textContent = username;
+      document.getElementById('chatAvatar').src = avatarUrl;
+      document.getElementById('messages').innerHTML = '';
+      loadMessages();
+    }
+
+    window.backToUsers = () => {
+      document.getElementById('chatStep').classList.add('hidden');
+      document.getElementById('usersStep').classList.remove('hidden');
+      currentChatWith = null;
+      showUsersList(); // orqaga qaytganda ro‘yxatni yangilaydi
+    };
+
+    // Xabar yuborilganda ro‘yxat yangilanadi
+    window.sendMsg = async () => {
+      const input = document.getElementById('msgInput');
+      const text = input.value.trim();
+      if (!text || !currentChatWith) return;
+
+      const chatId = [myUsername, currentChatWith].sort().join('_');
+      await supabase.from('messages').insert({ chat_id: chatId, sender: myUsername, text });
+      input.value = '';
+      showUsersList(); // yangi chat qo‘shiladi
+    };
+
+    window.uploadImage = async e => {
+      const file = e.target.files[0];
+      if (!file || file.size > 5*1024*1024) return alert("Rasm 5MB dan kichik bo‘lsin!");
+      const chatId = [myUsername, currentChatWith].sort().join('_');
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `chat/${chatId}/${fileName}`;
+      await supabase.storage.from('chat-images').upload(filePath, file);
+      const { data } = supabase.storage.from('chat-images').getPublicUrl(filePath);
+      await supabase.from('messages').insert({ chat_id: chatId, sender: myUsername, image_url: data.publicUrl });
+      e.target.value = '';
+      showUsersList();
+    };
+
+    function loadMessages() {
+      if (!currentChatWith) return;
+      const chatId = [myUsername, currentChatWith].sort().join('_');
+      supabase.channel(`chat:${chatId}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, p => {
+          const m = p.new;
+          addMessage(m);
+          if (m.sender !== myUsername && document.hidden && Notification.permission === 'granted') {
+            new Notification(m.sender, {
+              body: m.text || "Yangi rasm",
+              icon: 'https://via.placeholder.com/192/0088cc/ffffff?text=OX',
+              tag: 'orbicxs'
+            });
+          }
+          showUsersList(); // yangi xabar kelsa ro‘yxat yangilanadi
+        })
+        .subscribe();
+
+      supabase.from('messages').select('*').eq('chat_id', chatId).order('created_at', { ascending: true })
+        .then(({ data }) => data.forEach(addMessage));
+    }
+
+    function addMessage(m) {
+      const isSent = m.sender === myUsername;
+      const div = document.createElement('div');
+      div.className = `msg ${isSent ? 'sent' : 'received'}`;
+      if (m.image_url) {
+        div.innerHTML = `<img src="${m.image_url}" onclick="window.open(this.src)" style="border-radius:12px"><div class="msg-time">${new Date(m.created_at).toLocaleTimeString('uz',{hour:'2-digit',minute:'2-digit'})}</div>`;
+      } else {
+        div.innerHTML = `${m.text}<div class="msg-time">${new Date(m.created_at).toLocaleTimeString('uz',{hour:'2-digit',minute:'2-digit'})}</div>`;
+      }
+      document.getElementById('messages').appendChild(div);
+      div.scrollIntoView({behavior:'smooth'});
+    }
+
+    function status(t, c="status") { document.getElementById('status').textContent = t; document.getElementById('status').className = c; }
+    window.onpopstate = () => currentChatWith && backToUsers();
+  </script>
+</body>
+</html>
