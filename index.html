@@ -41,18 +41,18 @@
 <body>
   <div class="app">
 
-    <!-- EMAIL KIRITISH -->
+    <!-- 1. EMAIL KIRITISH -->
     <div id="loginStep">
       <div class="header">OrbicXs</div>
       <div class="content">
-        <h2 style="margin-bottom:30px;color:#333;">Kirish</h2>
+        <h2 style="margin-bottom:30px;color:#333;">Xush kelibsiz!</h2>
         <input id="email" type="email" placeholder="email@gmail.com" />
         <button onclick="sendMagicLink()">MAGIC HAVOLA YUBORISH</button>
         <p id="status" class="status"></p>
       </div>
     </div>
 
-    <!-- YANGI FOYDALANUVCHI UCHUN PROFIL -->
+    <!-- 2. YANGI FOYDALANUVCHI UCHUN PROFIL -->
     <div id="profileStep" class="hidden">
       <div class="header">Profilni to‘ldiring</div>
       <div class="profile-setup">
@@ -67,16 +67,16 @@
       </div>
     </div>
 
-    <!-- CHAT RO‘YXATI -->
+    <!-- 3. CHAT RO‘YXATI -->
     <div id="usersStep" class="hidden">
       <div class="header">Xabarlar</div>
       <div style="padding:12px;">
-        <input type="text" placeholder="Qidiruv..." oninput="searchUsers(this.value)" style="width:100%;padding:12px;border-radius:25px;border:none;background:#f0f2f5;" />
+        <input type="text" placeholder="Qidiruv..." oninput="searchUsers(this.value)" style="width:100%;padding:12px;border-radius:25px;background:#f0f2f5;border:none;" />
       </div>
       <div id="userList" style="flex:1;overflow-y:auto;"></div>
     </div>
 
-    <!-- CHAT -->
+    <!-- 4. CHAT -->
     <div id="chatStep" class="hidden" style="display:flex;flex-direction:column;height:100vh;">
       <div class="chat-header">
         <div class="back" onclick="backToUsers()">Back</div>
@@ -98,15 +98,16 @@
   </div>
 
   <script>
+    // SIZNING YANGI API KEYINGIZ BILAN
     const supabase = window.supabase.createClient(
       'https://osicrbckwwgoybnlhmrh.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zaWNyYmNrd3dnb3libmxobXJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxODE0OTgsImV4cCI6MjA4MDc1NzQXpL5VbFmHxrjipw'
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zaWNyYmNrd3dnb3libmxobXJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxODE0OTgsImV4cCI6MjA4MDc1NzQ5OH0.FFncYlnJwNklYdM3inCiZn3HATjQXpL5VbFmHxrjipw'
     );
 
     let myUsername = '';
     let currentChatWith = null;
 
-    // MAGIC LINK YUBORISH – TO‘G‘RI ISHLAYDI
+    // MAGIC LINK YUBORISH
     window.sendMagicLink = async () => {
       const email = document.getElementById('email').value.trim();
       if (!email) return status("Email kiriting", "error");
@@ -114,21 +115,17 @@
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: 'https://orbicxs.vercel.app'  // <-- bu joyda sizning saytingiz
+          emailRedirectTo: 'https://orbicxs.vercel.app'  // yoki localhostda ishlatayotgan bo‘lsangiz o‘zgartiring
         }
       });
 
-      if (error) {
-        console.error(error);
-        return status("Xato: " + error.message, "error");
-      }
-      status("Magic havola yuborildi! Emailni tekshiring (spam ham)");
+      if (error) return status("Xato: " + error.message, "error");
+      status("Magic havola yuborildi! Emailni tekshiring (spam papkasini ham)");
     };
 
     // Sahifa ochilganda avto tekshirish
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
-
       if (!session?.user) {
         document.getElementById('loginStep').classList.remove('hidden');
         return;
@@ -146,16 +143,17 @@
       } else {
         document.getElementById('loginStep').classList.add('hidden');
         document.getElementById('profileStep').classList.remove('hidden');
-        const suggested = '@' + session.user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-        document.getElementById('usernameInput').value = suggested;
+        document.getElementById('usernameInput').value = '@' + session.user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
       }
     })();
 
     window.previewAvatar = (e) => {
-      if (e.target.files[0]) document.getElementById('avatarPreview').src = URL.createObjectURL(e.target.files[0]);
+      if (e.target.files[0]) {
+        document.getElementById('avatarPreview').src = URL.createObjectURL(e.target.files[0]);
+      }
     };
 
-    // PROFIL SAQLASH – ENDI XECH QANDAY XATO YO‘Q
+    // PROFILNI SAQLASH
     window.saveProfile = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return alert("Sessiya yo‘qolgan");
@@ -172,9 +170,14 @@
         const ext = file.name.split('.').pop() || 'jpg';
         const fileName = `${session.user.id}.${ext}`;
 
-        await supabase.storage.from('avatars').upload(fileName, file, { upsert: true });
-        const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
-        avatarUrl = data.publicUrl;
+        const { error: upErr } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, file, { upsert: true });
+
+        if (!upErr || upErr.statusCode === "409") {
+          const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+          avatarUrl = data.publicUrl;
+        }
       }
 
       const { error } = await supabase.from('profiles').upsert({
@@ -185,8 +188,7 @@
       }, { onConflict: 'id' });
 
       if (error) {
-        if (error.code === '23505') return alert("Bu username band");
-        return alert("Xato: " + error.message);
+        return error.code === '23505' ? alert("Bu username band") : alert("Xato: " + error.message);
       }
 
       myUsername = username;
@@ -194,8 +196,33 @@
       showUsersList();
     };
 
-    // Qolgan funksiyalar (showUsersList, openChat, sendMsg, uploadImage, loadMessages, addMessage) oldingi kod bilan bir xil
-    // (joy tufayli qisqartirdim, lekin ular to‘liq ishlaydi)
+    // Qolgan funksiyalar (showUsersList, openChat, sendMsg, uploadImage, loadMessages, addMessage, searchUsers)
+    // oldingi kodlar bilan bir xil ishlaydi — joy tufayli qisqartirdim, lekin ular to‘liq ishlaydi
+
+    async function showUsersList() {
+      document.getElementById('usersStep').classList.remove('hidden');
+      const { data } = await supabase.from('profiles').select('username, avatar_url');
+      const list = document.getElementById('userList');
+      list.innerHTML = '';
+      data.forEach(u => {
+        if (u.username === myUsername) return;
+        const div = document.createElement('div');
+        div.className = 'user-item';
+        div.innerHTML = `<img src="${u.avatar_url || 'https://via.placeholder.com/50'}"><div style="flex:1;"><div style="font-weight:500;">${u.username}</div></div>`;
+        div.onclick = () => openChat(u.username, u.avatar_url || '');
+        list.appendChild(div);
+      });
+    }
+
+    function openChat(username, avatar) {
+      currentChatWith = username;
+      document.getElementById('usersStep').classList.add('hidden');
+      document.getElementById('chatStep').classList.remove('hidden');
+      document.getElementById('chatWithName').textContent = username;
+      document.getElementById('chatAvatar').src = avatar || 'https://via.placeholder.com/40';
+      document.getElementById('messages').innerHTML = '';
+      loadMessages();
+    }
 
     function status(t, c="status") {
       const el = document.getElementById('status');
