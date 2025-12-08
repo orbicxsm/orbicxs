@@ -1,98 +1,92 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OrbicXs</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
     *{margin:0;padding:0;box-sizing:border-box;font-family:'Roboto',sans-serif;}
-    body{background:#111b21;display:flex;justify-content:center;min-height:100vh;}
-    .app{width:100%;max-width:420px;background:#0b141a;color:#e9edef;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
-    .header{background:#00a884;padding:14px 16px;font-size:19px;font-weight:500;text-align:center;position:relative;}
-    .header .back{position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:24px;cursor:pointer;}
+    body{background:#111b21;display:flex;justify-content:center;min-height:100vh;color:#e9edef;}
+    .app{width:100%;max-width:420px;background:#0b141a;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+    .header{background:#00a884;color:#fff;padding:14px 16px;font-size:19px;font-weight:500;text-align:center;position:relative;}
+    .back{position:absolute;left:16px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:24px;}
     .content{padding:40px 30px;text-align:center;}
     input,button{width:100%;padding:14px;margin:12px 0;border-radius:12px;font-size:16px;border:none;outline:none;}
     input{background:#1f2c34;color:#e9edef;}
     button{background:#00a884;color:#fff;cursor:pointer;font-weight:500;}
-    button:hover{background:#008f6e;}
     .status{margin-top:15px;font-size:14px;}
     .error{color:#ff6b6b;}.success{color:#51cf66;}
-    .search input{background:#1f2c34;color:#e9edef;padding:12px 16px;border-radius:25px;}
+    .search input{background:#1f2c34;color:#e9edef;padding:12px 16px;border-radius:25px;width:100%;border:none;outline:none;}
     .user-list{flex:1;overflow-y:auto;background:#111b21;}
     .user-item{display:flex;align-items:center;padding:14px 16px;cursor:pointer;border-bottom:1px solid #1f2c34;}
     .user-item:hover{background:#1f2c34;}
     .user-item img{width:50px;height:50px;border-radius:50%;margin-right:14px;}
-    .user-item .name{font-weight:500;}
-    .user-item .last{font-size:13px;color:#8696a0;margin-top:3px;}
-
-    .chat-view{display:flex;flex-direction:column;height:100%;background:#0b141a;}
-    .chat-header{background:#00a884;padding:12px 16px;display:flex;align-items:center;color:#fff;}
-    .chat-header img{width:42px;height:42px;border-radius:50%;margin-right:12px;}
+    .name{font-weight:500;}
+    .last{font-size:13px;color:#8696a0;margin-top:3px;}
     .messages{flex:1;overflow-y:auto;padding:10px 7%;background:#0b141a;}
-    .msg{max-width:75%;padding:9px 13px;border-radius:12px;margin:8px 0;word-wrap:break-word;}
+    .msg{max-width:75%;padding:9px 13px;border-radius:12px;margin:8px 0;word-wrap:break-word;position:relative;}
     .sent{background:#005c4b;color:#fff;margin-left:auto;border-bottom-right-radius:4px;}
     .received{background:#1f2c34;color:#e9edef;margin-right:auto;border-bottom-left-radius:4px;}
     .msg img{max-width:100%;border-radius:12px;margin-top:6px;cursor:pointer;}
     .msg-time{font-size:11px;color:#8696a0;margin-top:4px;text-align:right;}
-
     .input-bar{padding:8px;background:#1f2c34;display:flex;align-items:center;gap:8px;}
-    .input-bar .attach{width:46px;height:46px;background:#2a3942;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#8696a0;}
-    .input-bar input{flex:1;padding:12px 16px;background:#2a3942;color:#e9edef;border-radius:25px;font-size:16px;}
-    .input-bar button{width:46px;height:46px;background:#00a884;color:#fff;border-radius:50%;cursor:pointer;}
-    .hidden{display:none !important;}
+    .attach,.send-btn{width:46px;height:46px;background:#2a3942;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#8696a0;}
+    .send-btn{background:#00a884;color:#fff;}
+    .msg-input{flex:1;padding:12px 16px;background:#2a3942;color:#e9edef;border-radius:25px;font-size:16px;outline:none;}
+    .hidden{display:none!important;}
   </style>
 </head>
 <body>
   <div class="app">
-
-    <!-- Email kirish -->
+    <!-- Email -->
     <div id="authStep">
       <div class="header">OrbicXs</div>
       <div class="content">
         <h2>Email kiriting</h2>
-        <input id="email" type="email" placeholder="misol@gmail.com"/>
+        <input id="email" type="email" placeholder="misol@gmail.com">
         <button onclick="sendMagicLink()">HAVOLA YUBORISH</button>
         <p id="status" class="status"></p>
       </div>
     </div>
 
-    <!-- Username tanlash -->
+    <!-- Username -->
     <div id="usernameStep" class="hidden">
       <div class="header">Username tanlang</div>
       <div class="content">
-        <input id="username" placeholder="@ismoil" maxlength="25"/>
+        <input id="usernameInput" placeholder="@javohir" maxlength="25">
         <button onclick="saveUsername()">SAQLASH</button>
       </div>
     </div>
 
-    <!-- Chatlar ro‘yxati -->
+    <!-- Chat ro'yxati -->
     <div id="usersStep" class="hidden">
       <div class="header">Xabarlar</div>
-      <div class="search"><input type="text" placeholder="Qidiruv..." oninput="searchUsers(this.value)"></div>
-      <div class="user-list" id="userList">
-        <div style="text-align:center;padding:30px;color:#8696a0;">Yuklanmoqda...</div>
+      <div style="padding:0 16px;margin-top:10px;">
+        <input type="text" placeholder="Qidiruv..." oninput="handleSearch(this.value)">
       </div>
+      <div class="user-list" id="userList">Yuklanmoqda...</div>
     </div>
 
-    <!-- Chat oynasi -->
-    <div id="chatStep" class="hidden chat-view">
-      <div class="chat-header">
-        <div class="back" onclick="backToUsers()">Back</div>
-        <img id="chatAvatar"/>
-        <div class="info">
-          <div class="name" id="chatWithName"></div>
-          <div class="status">online</div>
+    <!-- Chat -->
+    <div id="chatStep" class="hidden" style="display:flex;flex-direction:column;height:100%;">
+      <div class="header">
+        <div class="back" onclick="backToList()">Back</div>
+        <div style="margin-left:50px;display:flex;align-items:center;">
+          <img id="chatAvatar" style="width:40px;height:40px;border-radius:50%;margin-right:12px;">
+          <div>
+            <div id="chatName" style="font-weight:500;"></div>
+            <div style="font-size:13px;opacity:0.9;">online</div>
+          </div>
         </div>
       </div>
       <div class="messages" id="messages"></div>
       <div class="input-bar">
         <div class="attach" onclick="document.getElementById('fileInput').click()">Attach</div>
-        <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="uploadImage(event)"/>
-        <input id="msgInput" placeholder="Xabar..." onkeypress="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"/>
-        <button onclick="sendMsg()">Send</button>
+        <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="sendImage(event)">
+        <input class="msg-input" id="msgInput" placeholder="Xabar..." onkeypress="if(event.key==='Enter')sendMsg()">
+        <div class="send-btn" onclick="sendMsg()">Send</div>
       </div>
     </div>
   </div>
@@ -101,79 +95,69 @@
     const supabase = window.supabase.createClient(
       'https://osicrbckwwgoybnlhmrh.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zaWNyYmNrd3dnb3libmxobXJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxODE0OTgsImV4cCI6MjA4MDc1NzQ5OH0.FFncYlnJwNklYdM3inCiZn3HATjQXpL5VbFmHxrjipw',
-      { auth: { persistSession: true, storage: localStorage } }
+      { auth: { persistSession: true, storage: localStorage, autoRefreshToken: true } }
     );
 
-    let user = null;
-    let myUsername = '';
-    let currentChatWith = null;
-    let chatSub = null;
+    let me = null, myUsername = '', currentChat = null, subscription = null;
 
-    supabase.auth.onAuthStateChange((event, session) => {
+    // Sessiyani tiklash
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        user = session.user;
-        loadProfile();
-      } else {
-        showStep('authStep');
+        me = session.user;
+        loadMyProfile();
       }
     });
 
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    supabase.auth.onAuthStateChange((_, session) => {
       if (session) {
-        user = session.user;
-        loadProfile();
+        me = session.user;
+        loadMyProfile();
+      } else {
+        show('authStep');
       }
-    })();
+    });
 
-    async function loadProfile() {
-      const { data } = await supabase.from('profiles').select('username').eq('id', user.id).single();
+    async function loadMyProfile() {
+      const { data } = await supabase.from('profiles').select('username').eq('id', me.id).single();
       if (data?.username) {
         myUsername = data.username.toLowerCase();
-        showStep('usersStep');
-        showChatList();
+        show('usersStep');
+        loadChats();
       } else {
-        showStep('usernameStep');
+        show('usernameStep');
       }
     }
 
-    async function sendMagicLink() {
+    function sendMagicLink() {
       const email = document.getElementById('email').value.trim();
-      if (!email) return status("Email kiriting!", "error");
-      const { error } = await supabase.auth.signInWithOtp({ 
-        email, 
-        options: { emailRedirectTo: location.href }
-      });
-      if (error) status(error.message, "error");
-      else status("Havola yuborildi! Spamni tekshiring", "success");
+      if (!email) return;
+      supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: location.href } })
+        .then(() => document.getElementById('status').innerHTML = '<span class="success">Havola yuborildi!</span>');
     }
 
     async function saveUsername() {
-      let u = document.getElementById('username').value.trim();
-      if (!u) return alert("Username kiriting!");
+      let u = document.getElementById('usernameInput').value.trim();
+      if (!u) return alert("Username kiriting");
       if (!u.startsWith('@')) u = '@' + u;
       u = u.toLowerCase();
 
-      const { data: exists } = await supabase.from('profiles').select('id').eq('username', u).maybeSingle();
-      if (exists) return alert("Bu username band!");
+      const { data: exists } = await supabase.from('profiles').select('id').eq('username', u).single();
+      if (exists) return alert("Bu username band");
 
-      const { error } = await supabase.from('profiles').update({ username: u }).eq('id', user.id);
-      if (error) return alert("Xato: " + error.message);
-
+      await supabase.from('profiles').update({ username: u }).eq('id', me.id);
       myUsername = u;
-      showStep('usersStep');
-      showChatList();
+      show('usersStep');
+      loadChats();
     }
 
-    // Faqat yozishgan odamlar chiqadi
-    async function showChatList() {
-      const { data: msgs } = await supabase.from('messages')
+    async function loadChats() {
+      const { data } = await supabase.from('messages')
         .select('chat_id')
         .or(`sender.eq.${myUsername}`)
         .order('created_at', { ascending: false });
 
       const partners = new Set();
-      msgs?.forEach(m => {
+      data?.forEach(m => {
         const [a, b] = m.chat_id.split('_');
         const partner = a === myUsername ? b : a;
         partners.add(partner);
@@ -182,25 +166,21 @@
       const list = document.getElementById('userList');
       list.innerHTML = '';
       if (partners.size === 0) {
-        list.innerHTML = '<div style="text-align:center;padding:40px;color:#8696a0;">Hali hech kim bilan yozishmadingiz.<br>Qidiruvdan yangi odam toping!</div>';
+        list.innerHTML = '<div style="text-align:center;padding:50px;color:#8696a0;">Hali suhbatlar yoʻq<br>Qidiruvdan odam toping</div>';
         return;
       }
-
       for (let p of partners) {
-        const div = document.createElement('div');
-        div.className = 'user-item';
-        div.innerHTML = `
-          <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(p)}&background=00a884&color=fff&bold=true&size=128"/>
-          <div><div class="name">${p}</div><div class="last">suhbat</div></div>
-        `;
-        div.onclick = () => openChat(p);
-        list.appendChild(div);
+        const el = document.createElement('div');
+        el.className = 'user-item';
+        el.innerHTML = `<img src="https://ui-avatars.com/api/?name=${p}&background=00a884&color=fff&bold=true">
+                        <div><div class="name">${p}</div><div class="last">suhbat</div></div>`;
+        el.onclick = () => openChat(p);
+        list.appendChild(el);
       }
     }
 
-    // Qidiruv – yangi suhbat boshlash uchun
-    window.searchUsers = async (q) => {
-      if (!q.trim()) return showChatList();
+    async function handleSearch(q) {
+      if (!q.trim()) return loadChats();
       const { data } = await supabase.from('profiles')
         .select('username')
         .ilike('username', `%${q.toLowerCase()}%`)
@@ -209,58 +189,54 @@
       const list = document.getElementById('userList');
       list.innerHTML = '';
       data.forEach(p => {
-        const div = document.createElement('div');
-        div.className = 'user-item';
-        div.innerHTML = `
-          <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(p.username)}&background=00a884&color=fff&bold=true&size=128"/>
-          <div><div class="name">${p.username}</div><div class="last">Yangi suhbat</div></div>
-        `;
-        div.onclick = () => openChat(p.username.toLowerCase());
-        list.appendChild(div);
+        const el = document.createElement('div');
+        el.className = 'user-item';
+        el.innerHTML = `<img src="https://ui-avatars.com/api/?name=${p.username}&background=00a884&color=fff&bold=true">
+                        <div><div class="name">${p.username}</div><div class="last">Yangi suhbat</div></div>`;
+        el.onclick = () => openChat(p.username.toLowerCase());
+        list.appendChild(el);
       });
-    };
+    }
 
-    function openChat(u) {
-      currentChatWith = u;
-      document.getElementById('chatWithName').textContent = u;
-      document.getElementById('chatAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(u)}&background=00a884&color=fff&bold=true&size=128`;
-      showStep('chatStep');
+    function openChat(username) {
+      currentChat = username;
+      document.getElementById('chatName').textContent = username;
+      document.getElementById('chatAvatar').src = `https://ui-avatars.com/api/?name=${username}&background=00a884&color=fff&bold=true`;
       document.getElementById('messages').innerHTML = '';
+      show('chatStep');
       loadMessages();
     }
 
-    window.backToUsers = () => {
-      if (chatSub) chatSub.unsubscribe();
-      showStep('usersStep');
-      showChatList();
-      currentChatWith = null;
-    };
+    function backToList() {
+      if (subscription) subscription.unsubscribe();
+      show('usersStep');
+      loadChats();
+    }
 
     async function sendMsg() {
       const input = document.getElementById('msgInput');
       const text = input.value.trim();
-      if (!text || !currentChatWith) return;
-      const chatId = [myUsername, currentChatWith].sort().join('_');
+      if (!text || !currentChat) return;
+      const chatId = [myUsername, currentChat].sort().join('_');
       await supabase.from('messages').insert({ chat_id: chatId, sender: myUsername, text });
       input.value = '';
     }
 
-    async function uploadImage(e) {
+    async function sendImage(e) {
       const file = e.target.files[0];
-      if (!file || !currentChatWith) return;
+      if (!file || !currentChat) return;
       const ext = file.name.split('.').pop();
-      const name = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-      const path = `${[myUsername, currentChatWith].sort().join('_')}/${name}`;
+      const name = `${Date.now()}.${ext}`;
+      const path = `${[myUsername, currentChat].sort().join('_')}/${name}`;
       await supabase.storage.from('chats').upload(path, file);
       const { data } = supabase.storage.from('chats').getPublicUrl(path);
-      const chatId = [myUsername, currentChatWith].sort().join('_');
+      const chatId = [myUsername, currentChat].sort().join('_');
       await supabase.from('messages').insert({ chat_id: chatId, sender: myUsername, image_url: data.publicUrl });
     }
 
     function loadMessages() {
-      if (!currentChatWith) return;
-      const chatId = [myUsername, currentChatWith].sort().join('_');
-      chatSub = supabase.channel(`chat:${chatId}`)
+      const chatId = [myUsername, currentChat].sort().join('_');
+      subscription = supabase.channel(chatId)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, p => addMessage(p.new))
         .subscribe();
 
@@ -274,22 +250,15 @@
       div.className = `msg ${isMe ? 'sent' : 'received'}`;
       const time = new Date(m.created_at).toLocaleTimeString('uz', { hour: '2-digit', minute: '2-digit' });
       div.innerHTML = m.image_url 
-        ? `<img src="${m.image_url}" onclick="window.open(this.src)"/>`
+        ? `<img src="${m.image_url}" onclick="window.open(this.src)">`
         : `${m.text}<div class="msg-time">${time}</div>`;
       document.getElementById('messages').appendChild(div);
       div.scrollIntoView({ behavior: 'smooth' });
     }
 
-    function showStep(id) {
-      document.querySelectorAll('#authStep,#usernameStep,#usersStep,#chatStep')
-        .forEach(el => el.classList.add('hidden'));
+    function show(id) {
+      document.querySelectorAll('#authStep,#usernameStep,#usersStep,#chatStep').forEach(el => el.classList.add('hidden'));
       document.getElementById(id).classList.remove('hidden');
-    }
-
-    function status(t, type = "success") {
-      const el = document.getElementById('status');
-      el.textContent = t;
-      el.className = 'status ' + type;
     }
   </script>
 </body>
