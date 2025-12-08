@@ -109,7 +109,7 @@
 
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: 'https://orbicxs.com' }
+        options: { emailRedirectTo: 'https://orbicxs.vercel.app/' }
       });
 
       if (error) return status(error.message, "error");
