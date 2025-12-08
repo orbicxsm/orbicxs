@@ -28,10 +28,10 @@
     .user-item:hover { background: #f8f9fa; }
     .user-item img { width: 50px; height: 50px; border-radius: 50%; margin-right: 12px; object-fit: cover; }
     .user-item .name { font-weight: 500; }
-    .chat-header { background: #0088cc; color: white; padding: 14px; display: flex; align-items: center; }
+    .chat-header { background: #0088cc; color: white; padding: 14px; display: flex; align-items: center; position: fixed; top: 0; width: 100%; max-width: 400px; z-index: 10; }
     .chat-header .back { cursor: pointer; font-size: 28px; margin-right: 12px; font-weight: bold; }
     .chat-header img { width: 40px; height: 40px; border-radius: 50%; margin-right: 12px; object-fit: cover; }
-    .messages { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 90px; background: #efeae2; }
+    .messages { flex: 1; overflow-y: auto; padding: 16px; padding-top: 80px; padding-bottom: 90px; background: #efeae2; }
     .msg { max-width: 75%; padding: 10px 14px; border-radius: 18px; margin: 8px 0; word-wrap: break-word; }
     .sent { background: #00bfff; color: white; margin-left: auto; border-bottom-right-radius: 4px; }
     .received { background: white; color: black; margin-right: auto; border-bottom-left-radius: 4px; }
@@ -48,7 +48,6 @@
 </head>
 <body>
   <div class="app">
-
     <!-- 1. EMAIL KIRISH -->
     <div id="authStep">
       <div class="header">OrbicXs</div>
@@ -58,7 +57,6 @@
         <p id="status" class="status"></p>
       </div>
     </div>
-
     <!-- 2. PROFIL SOZLASH (1 marta chiqadi) -->
     <div id="profileSetupStep" class="hidden">
       <div class="header">Profilni to‘ldiring</div>
@@ -68,22 +66,18 @@
         <button onclick="document.getElementById('avatarInput').click()" style="padding:10px 20px; background:#0088cc; color:white; border:none; border-radius:12px; cursor:pointer;">
           Rasm tanlash
         </button>
-
         <p class="suggested">Taklif etilgan username:</p>
         <h3 id="suggestedUsername" style="margin:10px 0; color:#0088cc;"></h3>
-
         <input id="usernameInput" type="text" placeholder="Username kiriting (@ bilan)" style="text-align:center;" />
         <button onclick="saveProfile()" style="margin-top:20px;">SAQLASH VA DAVOM ETISH</button>
       </div>
     </div>
-
     <!-- 3. FOYDALANUVCHILAR RO‘YXATI -->
     <div id="usersStep" class="hidden">
       <div class="header">Xabarlar</div>
       <div class="search"><input type="text" placeholder="Qidiruv..." oninput="searchUsers(this.value)" /></div>
       <div class="user-list" id="userList"></div>
     </div>
-
     <!-- 4. CHAT -->
     <div id="chatStep" class="hidden" style="display:flex; flex-direction:column; height:100vh;">
       <div class="chat-header">
@@ -102,19 +96,15 @@
         <button onclick="sendMsg()">Send</button>
       </div>
     </div>
-
   </div>
-
   <script>
     const SUPABASE_URL = 'https://osicrbckwwgoybnlhmrh.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zaWNyYmNrd3dnb3libmxobXJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxODE0OTgsImV4cCI6MjA4MDc1NzQ5OH0.FFncYlnJwNklYdM3inCiZn3HATjQXpL5VbFmHxrjipw';
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
     let user = null;
     let myUsername = '';
     let myAvatarUrl = '';
     let currentChatWith = null;
-
     // 1. Magic Link yuborish
     window.sendMagicLink = async () => {
       const email = document.getElementById('email').value.trim();
@@ -126,19 +116,16 @@
       if (error) return status(error.message, "error");
       status("Havola yuborildi! Emailni tekshiring");
     };
-
     // 2. Sessiyani tekshirish + Profil sozlash
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-
       user = session.user;
       const { data: profile } = await supabase
         .from('profiles')
         .select('username, avatar_url')
         .eq('id', user.id)
         .single();
-
       if (profile?.username) {
         myUsername = profile.username;
         myAvatarUrl = profile.avatar_url || 'https://via.placeholder.com/120/cccccc/666666?text=${myUsername[0].toUpperCase()}';
@@ -147,14 +134,12 @@
         // Birinchi marta kirganda — profil sozlash oynasi
         document.getElementById('authStep').classList.add('hidden');
         document.getElementById('profileSetupStep').classList.remove('hidden');
-
         // Emaildan username taklif qilish
         const suggested = '@' + user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
         document.getElementById('suggestedUsername').textContent = suggested;
         document.getElementById('usernameInput').value = suggested;
       }
     })();
-
     // Avatar tanlashda preview
     window.previewAvatar = (e) => {
       const file = e.target.files[0];
@@ -162,17 +147,14 @@
         document.getElementById('avatarPreview').src = URL.createObjectURL(file);
       }
     };
-
     // Profilni saqlash (1 marta)
     window.saveProfile = async () => {
       let username = document.getElementById('usernameInput').value.trim();
       if (!username) return alert("Username kiriting!");
       if (!username.startsWith('@')) username = '@' + username;
       username = username.toLowerCase();
-
       const fileInput = document.getElementById('avatarInput');
       let avatarUrl = 'https://via.placeholder.com/120/cccccc/666666?text=' + username[1].toUpperCase();
-
       if (fileInput.files[0]) {
         const file = fileInput.files[0];
         const fileExt = file.name.split('.').pop();
@@ -180,38 +162,31 @@
         const { error } = await supabase.storage
           .from('avatars')
           .upload(fileName, file, { upsert: true });
-
         if (!error || error.status === 409) { // 409 = allaqachon bor
           const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
           avatarUrl = data.publicUrl;
         }
       }
-
       const { error } = await supabase.from('profiles').upsert({
         id: user.id,
         username,
         avatar_url: avatarUrl,
         email: user.email
       });
-
       if (error && error.code === '23505') return alert("Bu username band!");
       if (error) return alert("Xatolik: " + error.message);
-
       myUsername = username;
       myAvatarUrl = avatarUrl;
       showUsersList();
     };
-
     // Foydalanuvchilar ro‘yxati
     async function showUsersList() {
       document.getElementById('profileSetupStep').classList.add('hidden');
       document.getElementById('authStep').classList.add('hidden');
       document.getElementById('usersStep').classList.remove('hidden');
-
       const { data } = await supabase.from('profiles').select('username, avatar_url');
       const list = document.getElementById('userList');
       list.innerHTML = '';
-
       data.forEach(u => {
         if (u.username === myUsername) return;
         const div = document.createElement('div');
@@ -226,7 +201,6 @@
         list.appendChild(div);
       });
     }
-
     function openChat(username, avatarUrl = '') {
       currentChatWith = username;
       document.getElementById('usersStep').classList.add('hidden');
@@ -235,14 +209,13 @@
       document.getElementById('chatAvatar').src = avatarUrl || 'https://via.placeholder.com/40';
       document.getElementById('messages').innerHTML = '';
       loadMessages();
+      history.pushState({ chatWith: username }, '');
     }
-
     window.backToUsers = () => {
       document.getElementById('chatStep').classList.add('hidden');
       document.getElementById('usersStep').classList.remove('hidden');
       currentChatWith = null;
     };
-
     // Matn jo‘natish
     window.sendMsg = async () => {
       const msg = document.getElementById('msgInput').value.trim();
@@ -255,56 +228,45 @@
       });
       document.getElementById('msgInput').value = '';
     };
-
     // Rasm jo‘natish (RLS xatosiz!)
     window.uploadImage = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
       if (file.size > 5*1024*1024) return alert("Rasm 5MB dan kichik bo‘lsin!");
-
       const chatId = [myUsername, currentChatWith].sort().join('_');
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}_${Math.random().toString(36).substr(2,9)}.${fileExt}`;
       const filePath = `chat/${chatId}/${fileName}`;
-
       const { error } = await supabase.storage
         .from('chat-images')
         .upload(filePath, file, { upsert: true });
-
       const { data } = supabase.storage.from('chat-images').getPublicUrl(filePath);
-
       await supabase.from('messages').insert({
         chat_id: chatId,
         sender: myUsername,
         text: '',
         image_url: data.publicUrl
       });
-
       e.target.value = '';
     };
-
     function loadMessages() {
       if (!currentChatWith) return;
       const chatId = [myUsername, currentChatWith].sort().join('_');
-
       const channel = supabase.channel(`chat:${chatId}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, p => {
           addMessage(p.new);
         })
         .subscribe();
-
       supabase.from('messages')
         .select('*')
         .eq('chat_id', chatId)
         .order('created_at', { ascending: true })
         .then(({ data }) => data.forEach(addMessage));
     }
-
     function addMessage(m) {
       const isSent = m.sender === myUsername;
       const div = document.createElement('div');
       div.className = `msg ${isSent ? 'sent' : 'received'}`;
-
       if (m.image_url) {
         div.innerHTML = `<img src="${m.image_url}" onclick="window.open(this.src,'_blank')" style="border-radius:12px;" />
           <div class="msg-time">${new Date(m.created_at).toLocaleTimeString('uz',{hour:'2-digit',minute:'2-digit'})}</div>`;
@@ -315,18 +277,21 @@
       document.getElementById('messages').appendChild(div);
       div.scrollIntoView({behavior:'smooth'});
     }
-
     function status(t, c="status") {
       const el = document.getElementById('status');
       el.textContent = t;
       el.className = c;
     }
-
     window.searchUsers = async (q) => {
       if (!q) return showUsersList();
       const { data } = await supabase.from('profiles').select('username, avatar_url').ilike('username', `%${q}%`);
       // xuddi showUsersList kabi render qilish...
       // (kerak bo‘lsa to‘liq yozaman)
+    };
+    window.onpopstate = function(event) {
+      if (currentChatWith) {
+        backToUsers();
+      }
     };
   </script>
 </body>
