@@ -97,7 +97,7 @@
 
     let user = null, myUsername = '', currentChatWith = null;
 
-    // Bildirishnoma obunasi
+    // 
     async function subscribeToPush() {
       if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
       const reg = await navigator.serviceWorker.register('/sw.js');
