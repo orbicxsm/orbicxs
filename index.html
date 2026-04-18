@@ -11,64 +11,61 @@
             display: flex; flex-direction: column; align-items: center;
             justify-content: center; color: white; overflow: hidden;
         }
-        .container { text-align: center; width: 100%; max-width: 800px; }
         .logo {
-            font-size: 5rem; font-weight: 900; color: #00ccff;
-            text-shadow: 0 0 30px rgba(0, 204, 255, 0.5); margin-bottom: 10px;
+            font-size: 5.5rem; font-weight: 900; color: #00ccff;
+            text-shadow: 0 0 35px rgba(0, 204, 255, 0.6); margin-bottom: 20px;
         }
         .search-box {
-            width: 80%; max-width: 600px; padding: 18px 25px;
+            width: 500px; padding: 18px 25px;
             font-size: 1.2rem; border: none; border-radius: 50px;
             outline: none; background: white; color: #333;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .currency-container {
-            margin-top: 40px; display: flex; gap: 25px;
-            background: rgba(255,255,255,0.05); padding: 15px 30px;
+        .currency-box {
+            margin-top: 50px; display: flex; gap: 30px;
+            background: rgba(255,255,255,0.05); padding: 15px 40px;
             border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);
         }
-        .currency-item { text-align: center; }
-        .currency-value { color: #00ccff; font-weight: bold; display: block; }
+        .currency-item span { color: #00ccff; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="logo">Orbicxs</div>
-        
-        <form id="searchForm" onsubmit="return doSearch(event)">
-            <input type="text" id="searchInput" class="search-box" 
-                   placeholder="Nima qidiramiz?" autofocus autocomplete="off">
-        </form>
+    <div class="logo">Orbicxs</div>
+    
+    <input type="text" id="searchInput" class="search-box" 
+           placeholder="Nima qidiramiz?" autofocus onkeydown="if(event.key==='Enter') search()">
 
-        <div class="currency-container">
-            <div class="currency-item"><span>USD</span><span class="currency-value" id="usd">...</span></div>
-            <div class="currency-item"><span>EUR</span><span class="currency-value" id="eur">...</span></div>
-            <div class="currency-item"><span>RUB</span><span class="currency-value" id="rub">...</span></div>
-        </div>
+    <div class="currency-box">
+        <div class="currency-item">USD <span id="usd">...</span></div>
+        <div class="currency-item">EUR <span id="eur">...</span></div>
+        <div class="currency-item">RUB <span id="rub">...</span></div>
     </div>
 
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
     <script>
-        function doSearch(e) {
-            e.preventDefault();
-            const val = document.getElementById('searchInput').value.trim();
-            if (val) {
-                // Brauzerga qidiruv so'rovini yuborish
-                window.location.href = "https://orbicxs.com/search?q=" + encodeURIComponent(val);
+        var backend;
+        new QWebChannel(qt.webChannelTransport, function (channel) {
+            backend = channel.objects.backend;
+        });
+
+        function search() {
+            var val = document.getElementById('searchInput').value.trim();
+            if (val && backend) {
+                backend.search_now(val); // Python funksiyasini chaqirish
             }
-            return false;
         }
 
-        async function fetchCurrency() {
+        async function getRates() {
             try {
                 const res = await fetch('https://cbu.uz/uz/arkhiv-kursov-valyut/json/');
                 const data = await res.json();
-                document.getElementById('usd').innerText = data.find(i => i.Ccy === 'USD').Rate;
-                document.getElementById('eur').innerText = data.find(i => i.Ccy === 'EUR').Rate;
-                document.getElementById('rub').innerText = data.find(i => i.Ccy === 'RUB').Rate;
-            } catch (err) { console.log(err); }
+                document.getElementById('usd').innerText = data[0].Rate;
+                document.getElementById('eur').innerText = data[1].Rate;
+                document.getElementById('rub').innerText = data[2].Rate;
+            } catch(e) {}
         }
-        fetchCurrency();
+        getRates();
     </script>
 </body>
 </html>
