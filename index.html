@@ -12,21 +12,25 @@
             justify-content: center; color: white; overflow: hidden;
         }
         .logo {
-            font-size: 5.5rem; font-weight: 900; color: #00ccff;
-            text-shadow: 0 0 35px rgba(0, 204, 255, 0.6); margin-bottom: 20px;
+            font-size: 5rem; font-weight: 900; color: #00ccff;
+            text-shadow: 0 0 30px rgba(0, 204, 255, 0.5);
+            margin-bottom: 20px; cursor: default;
         }
         .search-box {
-            width: 500px; padding: 18px 25px;
+            width: 550px; padding: 18px 25px;
             font-size: 1.2rem; border: none; border-radius: 50px;
             outline: none; background: white; color: #333;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: 0.3s;
         }
-        .currency-box {
+        .search-box:focus { box-shadow: 0 0 20px #00ccff; }
+        .currency-container {
             margin-top: 50px; display: flex; gap: 30px;
             background: rgba(255,255,255,0.05); padding: 15px 40px;
             border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);
         }
-        .currency-item span { color: #00ccff; font-weight: bold; }
+        .currency-item { text-align: center; }
+        .currency-item span { color: #00ccff; font-weight: bold; display: block; font-size: 1.2rem; }
     </style>
 </head>
 <body>
@@ -34,38 +38,36 @@
     <div class="logo">Orbicxs</div>
     
     <input type="text" id="searchInput" class="search-box" 
-           placeholder="Nima qidiramiz?" autofocus onkeydown="if(event.key==='Enter') search()">
+           placeholder="Orbicxs orqali qidirish..." autofocus>
 
-    <div class="currency-box">
+    <div class="currency-container">
         <div class="currency-item">USD <span id="usd">...</span></div>
         <div class="currency-item">EUR <span id="eur">...</span></div>
         <div class="currency-item">RUB <span id="rub">...</span></div>
     </div>
 
-    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
     <script>
-        var backend;
-        new QWebChannel(qt.webChannelTransport, function (channel) {
-            backend = channel.objects.backend;
+        const input = document.getElementById('searchInput');
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const query = input.value.trim();
+                if (query) {
+                    // Python brauzeriga qidiruv so'rovini yuborish
+                    window.location.href = "https://orbicxs.com/search?q=" + encodeURIComponent(query);
+                }
+            }
         });
 
-        function search() {
-            var val = document.getElementById('searchInput').value.trim();
-            if (val && backend) {
-                backend.search_now(val); // Python funksiyasini chaqirish
-            }
-        }
-
-        async function getRates() {
+        async function fetchCurrency() {
             try {
                 const res = await fetch('https://cbu.uz/uz/arkhiv-kursov-valyut/json/');
                 const data = await res.json();
-                document.getElementById('usd').innerText = data[0].Rate;
-                document.getElementById('eur').innerText = data[1].Rate;
-                document.getElementById('rub').innerText = data[2].Rate;
-            } catch(e) {}
+                document.getElementById('usd').innerText = data[0].Rate + " so'm";
+                document.getElementById('eur').innerText = data[1].Rate + " so'm";
+                document.getElementById('rub').innerText = data[2].Rate + " so'm";
+            } catch (err) {}
         }
-        getRates();
+        fetchCurrency();
     </script>
 </body>
 </html>
