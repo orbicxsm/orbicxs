@@ -3,209 +3,212 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orbicxs | Global Terminal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <title>Orbicxs | Valyuta va Kripto</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #050505; --sidebar: #0f0f0f; --accent: #00d1ff;
-            --up: #00ff88; --down: #ff3b3b; --text: #e0e0e0; --border: #1f1f1f;
+            --bg: #050505; --card: #121212; --accent: #00d1ff;
+            --text: #ffffff; --sub: #888888; --border: #222;
         }
 
-        * { box-sizing: border-box; outline: none; }
+        * { box-sizing: border-box; }
         body {
             background-color: var(--bg); color: var(--text);
-            font-family: 'Inter', sans-serif; margin: 0;
-            display: flex; height: 100vh; width: 100vw; overflow: hidden;
+            font-family: 'Inter', sans-serif; margin: 0; padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
         }
 
-        /* SIDEBAR */
-        .sidebar {
-            width: 350px; background: var(--sidebar); border-right: 1px solid var(--border);
-            display: flex; flex-direction: column; height: 100%; z-index: 10;
+        .container { width: 100%; max-width: 1000px; }
+
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { font-weight: 800; letter-spacing: 5px; color: var(--accent); margin: 0; }
+
+        /* Qidiruv */
+        .search-container { margin-bottom: 25px; width: 100%; }
+        #searchInput {
+            width: 100%; padding: 15px 20px; background: var(--card);
+            border: 1px solid var(--border); border-radius: 12px;
+            color: #fff; font-size: 16px; transition: 0.3s;
+        }
+        #searchInput:focus { border-color: var(--accent); outline: none; }
+
+        /* Bo'limlar - Grid */
+        .market-sections {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
         }
 
-        .brand {
-            padding: 20px; font-weight: 900; font-size: 24px; text-align: center;
-            color: var(--accent); border-bottom: 1px solid var(--border); letter-spacing: 4px;
+        .section-box {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 15px; overflow: hidden; height: fit-content;
         }
 
-        /* Qidiruv bo'limi */
-        .search-area { padding: 15px; border-bottom: 1px solid var(--border); }
-        .search-area input {
-            width: 100%; padding: 12px; background: #1a1a1a; border: 1px solid var(--border);
-            border-radius: 8px; color: #fff; font-size: 14px;
+        .section-title {
+            padding: 15px; background: #1a1a1a; font-weight: bold;
+            text-align: center; border-bottom: 1px solid var(--border);
+            text-transform: uppercase; letter-spacing: 2px; font-size: 14px;
         }
 
-        .tabs { display: flex; background: #080808; }
-        .tab-btn {
-            flex: 1; padding: 15px; border: none; background: none;
-            color: #555; cursor: pointer; font-weight: bold; transition: 0.3s;
-            font-size: 12px; letter-spacing: 1px;
-        }
-        .tab-btn.active { color: var(--accent); border-bottom: 2px solid var(--accent); background: #111; }
-
-        /* LIST */
-        .asset-list {
-            flex: 1; overflow-y: auto; padding: 10px;
-            scrollbar-width: thin; scrollbar-color: #333 transparent;
-        }
-
+        /* Aktivlar ro'yxati */
+        .asset-list { padding: 10px; }
         .asset-item {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 12px 15px; background: #141414; border-radius: 8px;
-            margin-bottom: 6px; cursor: pointer; border: 1px solid transparent;
-            transition: 0.2s;
+            padding: 15px; border-bottom: 1px solid #1a1a1a; transition: 0.2s;
         }
-        .asset-item:hover { border-color: var(--accent); background: #1a1a1a; }
-        .asset-item.active { border-color: var(--accent); background: #1a1a1a; }
+        .asset-item:last-child { border: none; }
+        .asset-item:hover { background: #1a1a1a; }
 
-        .name-part { display: flex; flex-direction: column; }
-        .symbol { font-weight: 700; font-size: 14px; }
-        .full-name { font-size: 10px; color: #666; margin-top: 2px; text-transform: uppercase; }
+        .info-part { display: flex; align-items: center; gap: 12px; }
+        .flag { font-size: 24px; }
+        .details { display: flex; flex-direction: column; }
+        .sym { font-weight: bold; font-size: 16px; }
+        .full { font-size: 11px; color: var(--sub); }
 
         .price-part { text-align: right; font-family: 'JetBrains Mono', monospace; }
-        .price { font-size: 15px; font-weight: bold; color: var(--accent); }
+        .uzs-val { font-size: 15px; font-weight: bold; color: #39d353; }
+        .usd-val { font-size: 11px; color: var(--sub); margin-top: 2px; }
 
-        /* MAIN CONTENT */
-        .main-content { flex: 1; height: 100%; background: #000; }
-        #tv_widget_container { width: 100%; height: 100%; }
-
-        @media (max-width: 900px) {
-            body { flex-direction: column; }
-            .sidebar { width: 100%; height: 40%; border-right: none; border-bottom: 1px solid var(--border); }
-            .main-content { height: 60%; }
+        /* Mobil qurilmalar */
+        @media (max-width: 768px) {
+            .market-sections { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
-    <div class="sidebar">
-        <div class="brand">ORBICXS</div>
-        
-        <div class="search-area">
-            <input type="text" id="searchInput" placeholder="Aktivni qidirish..." onkeyup="filterAssets()">
+    <div class="container">
+        <div class="header">
+            <h1>ORBICXS</h1>
+            <p style="color: #555; font-size: 12px;">GLOBAL VALYUTA VA KRIPTO MONITORINGI</p>
         </div>
 
-        <div class="tabs">
-            <button class="tab-btn active" id="tab-crypto" onclick="switchTab('crypto')">KRIPTO (16)</button>
-            <button class="tab-btn" id="tab-fiat" onclick="switchTab('fiat')">VALYUTA (16)</button>
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Valyuta yoki Kriptoni qidirish..." onkeyup="filterData()">
         </div>
 
-        <div id="list-container" class="asset-list">
+        <div class="market-sections">
+            <div class="section-box">
+                <div class="section-title">Valyuta Bozorlari (UZS)</div>
+                <div id="fiat-list" class="asset-list">
+                    </div>
             </div>
+
+            <div class="section-box">
+                <div class="section-title">Kripto Aktivlar (UZS)</div>
+                <div id="crypto-list" class="asset-list">
+                    </div>
+            </div>
+        </div>
     </div>
 
-    <div class="main-content">
-        <div id="tv_widget_container"></div>
-    </div>
-
-    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     <script>
-        let currentTab = 'crypto';
-        const searchInput = document.getElementById('searchInput');
-
-        // 16 Ta Asosiy Kripto
-        const mainCrypto = [
-            {s: "BTCUSDT", n: "Bitcoin", e: "BINANCE"}, {s: "ETHUSDT", n: "Ethereum", e: "BINANCE"},
-            {s: "BNBUSDT", n: "BNB", e: "BINANCE"}, {s: "SOLUSDT", n: "Solana", e: "BINANCE"},
-            {s: "XRPUSDT", n: "XRP", e: "BINANCE"}, {s: "ADAUSDT", n: "Cardano", e: "BINANCE"},
-            {s: "AVAXUSDT", n: "Avalanche", e: "BINANCE"}, {s: "DOGEUSDT", n: "Dogecoin", e: "BINANCE"},
-            {s: "DOTUSDT", n: "Polkadot", e: "BINANCE"}, {s: "TRXUSDT", n: "TRON", e: "BINANCE"},
-            {s: "LINKUSDT", n: "Chainlink", e: "BINANCE"}, {s: "MATICUSDT", n: "Polygon", e: "BINANCE"},
-            {s: "LTCUSDT", n: "Litecoin", e: "BINANCE"}, {s: "SHIBUSDT", n: "Shiba Inu", e: "BINANCE"},
-            {s: "BCHUSDT", n: "Bitcoin Cash", e: "BINANCE"}, {s: "UNIUSDT", n: "Uniswap", e: "BINANCE"}
+        // Valyuta ma'lumotlari (16 ta asosiy)
+        const fiatAssets = [
+            {id: "USD", name: "AQSH Dollari", flag: "🇺🇸"},
+            {id: "EUR", name: "Yevro", flag: "🇪🇺"},
+            {id: "RUB", name: "Rossiya Rubli", flag: "🇷🇺"},
+            {id: "GBP", name: "Britaniya Funti", flag: "🇬🇧"},
+            {id: "JPY", name: "Yaponiya Yenasi", flag: "🇯🇵"},
+            {id: "TRY", name: "Turkiya Lirasi", flag: "🇹🇷"},
+            {id: "CNY", name: "Xitoy Yuani", flag: "🇨🇳"},
+            {id: "AED", name: "BAA Dirhami", flag: "🇦🇪"},
+            {id: "CHF", name: "Shveytsariya Franki", flag: "🇨🇭"},
+            {id: "CAD", name: "Kanada Dollari", flag: "🇨🇦"},
+            {id: "AUD", name: "Avstraliya Dollari", flag: "🇦🇺"},
+            {id: "KZT", name: "Qozog'iston Tengesi", flag: "🇰🇿"},
+            {id: "KRW", name: "Koreya Vonasi", flag: "🇰🇷"},
+            {id: "SAR", name: "Saudiya Riyoli", flag: "🇸🇦"},
+            {id: "INR", name: "Hindiston Rupiyasi", flag: "🇮🇳"},
+            {id: "MYR", name: "Malayziya Ringgiti", flag: "🇲🇾"}
         ];
 
-        // 16 Ta Asosiy Valyuta
-        const mainFiat = [
-            {s: "USDUZS", n: "USD / O'zbek So'mi", e: "FX_IDC"}, {s: "EURUZS", n: "EUR / O'zbek So'mi", e: "FX_IDC"},
-            {s: "RUBUZS", n: "RUB / O'zbek So'mi", e: "FX_IDC"}, {s: "EURUSD", n: "EUR / USD", e: "FX"},
-            {s: "GBPUSD", n: "GBP / USD", e: "FX"}, {s: "USDJPY", n: "USD / JPY", e: "FX"},
-            {s: "AUDUSD", n: "AUD / USD", e: "FX"}, {s: "USDCAD", n: "USD / CAD", e: "FX"},
-            {s: "USDCHF", n: "USD / CHF", e: "FX"}, {s: "USDCNY", n: "USD / CNY", e: "FX"},
-            {s: "USDTRY", n: "USD / TRY", e: "FX"}, {s: "USDAED", n: "USD / AED", e: "FX"},
-            {s: "USDKRW", n: "USD / KRW", e: "FX"}, {s: "USDSGD", n: "USD / SGD", e: "FX"},
-            {s: "USDINR", n: "USD / INR", e: "FX"}, {s: "USDSAR", n: "USD / SAR", e: "FX"}
+        // Kripto ma'lumotlari (16 ta asosiy)
+        const cryptoAssets = [
+            {id: "BTC", name: "Bitcoin", flag: "₿"},
+            {id: "ETH", name: "Ethereum", flag: "Ξ"},
+            {id: "BNB", name: "BNB", flag: "🔶"},
+            {id: "SOL", name: "Solana", flag: "☀️"},
+            {id: "XRP", name: "Ripple", flag: "✕"},
+            {id: "ADA", name: "Cardano", flag: "₳"},
+            {id: "AVAX", name: "Avalanche", flag: "🔺"},
+            {id: "DOGE", name: "Dogecoin", flag: "Ð"},
+            {id: "DOT", name: "Polkadot", flag: "●"},
+            {id: "TRX", name: "TRON", flag: "💎"},
+            {id: "LINK", name: "Chainlink", flag: "🔗"},
+            {id: "MATIC", name: "Polygon", flag: "💜"},
+            {id: "LTC", name: "Litecoin", flag: "Ł"},
+            {id: "SHIB", name: "Shiba Inu", flag: "🐕"},
+            {id: "UNI", name: "Uniswap", flag: "🦄"},
+            {id: "BCH", name: "Bitcoin Cash", flag: "💵"}
         ];
 
-        function switchTab(tab) {
-            currentTab = tab;
-            document.getElementById('tab-crypto').classList.toggle('active', tab === 'crypto');
-            document.getElementById('tab-fiat').classList.toggle('active', tab === 'fiat');
-            searchInput.value = "";
-            renderAssets();
-        }
+        async function updateMarket() {
+            try {
+                // API dan barcha kurslarni olish
+                const res = await fetch('https://open.er-api.com/v6/latest/USD');
+                const data = await res.json();
+                const uzsBase = data.rates.UZS;
 
-        function renderAssets() {
-            const container = document.getElementById('list-container');
-            container.innerHTML = "";
-            const query = searchInput.value.toUpperCase();
-            
-            // Agar qidiruv bo'sh bo'lsa 16 ta asosiy, bo'lmasa qidiruv natijasi
-            const list = currentTab === 'crypto' ? mainCrypto : mainFiat;
-
-            list.forEach(item => {
-                if (item.s.includes(query) || item.n.toUpperCase().includes(query)) {
-                    const div = document.createElement('div');
-                    div.className = 'asset-item';
-                    div.onclick = () => updateChart(item.e + ":" + item.s);
+                // Valyutalarni chiqarish
+                const fiatContainer = document.getElementById('fiat-list');
+                fiatContainer.innerHTML = '';
+                fiatAssets.forEach(f => {
+                    const rateInUSD = data.rates[f.id];
+                    const rateInUZS = (uzsBase / rateInUSD).toFixed(2);
                     
-                    div.innerHTML = `
-                        <div class="name-part">
-                            <span class="symbol">${item.s}</span>
-                            <span class="full-name">${item.n}</span>
-                        </div>
-                        <div class="price-part">
-                            <div class="price">LIVE</div>
-                            <div class="change" style="color:#555">Chart Data</div>
-                        </div>
-                    `;
-                    container.appendChild(div);
-                }
-            });
+                    fiatContainer.innerHTML += createItem(f.flag, f.id, f.name, rateInUZS, "1 " + f.id);
+                });
 
-            // Qidiruvda asosiy ro'yxatda yo'q narsa yozilsa (Universal Search)
-            if (query.length > 2) {
-                const isExtra = !list.some(i => i.s.includes(query));
-                if (isExtra) {
-                    const extraDiv = document.createElement('div');
-                    extraDiv.className = 'asset-item';
-                    let extSym = currentTab === 'crypto' ? "BINANCE:" + query + "USDT" : "FX:" + query + "USD";
-                    extraDiv.onclick = () => updateChart(extSym);
-                    extraDiv.innerHTML = `<div class="name-part"><span class="symbol">${query}</span><span class="full-name">Global Search Result</span></div><div class="price-part"><div class="price">🔍</div></div>`;
-                    container.appendChild(extraDiv);
+                // Kriptolarni chiqarish (Binance orqali USD ga nisbatan)
+                const cryptoContainer = document.getElementById('crypto-list');
+                cryptoContainer.innerHTML = '';
+                
+                // Kripto narxlarini olish
+                for (let c of cryptoAssets) {
+                    try {
+                        const cRes = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${c.id}USDT`);
+                        const cData = await cRes.json();
+                        const priceInUSD = parseFloat(cData.price);
+                        const priceInUZS = (priceInUSD * uzsBase).toLocaleString();
+                        
+                        cryptoContainer.innerHTML += createItem(c.flag, c.id, c.name, priceInUZS, "$" + priceInUSD.toLocaleString());
+                    } catch(e) {
+                        cryptoContainer.innerHTML += createItem(c.flag, c.id, c.name, "Yuklanmoqda...", "USD");
+                    }
                 }
+
+            } catch (e) {
+                console.error("Ma'lumot olishda xatolik:", e);
             }
         }
 
-        function updateChart(symbol) {
-            new TradingView.widget({
-                "autosize": true,
-                "symbol": symbol,
-                "interval": "H",
-                "timezone": "Etc/UTC",
-                "theme": "dark",
-                "style": "1",
-                "locale": "uz",
-                "container_id": "tv_widget_container",
-                "enable_publishing": false,
-                "allow_symbol_change": true,
-                "details": true,
-                "hotlist": true,
-                "calendar": true,
-                "show_popup_button": true,
-                "popup_width": "1000",
-                "popup_height": "650"
+        function createItem(flag, sym, full, uzs, usd) {
+            return `
+                <div class="asset-item">
+                    <div class="info-part">
+                        <div class="flag">${flag}</div>
+                        <div class="details">
+                            <span class="sym">${sym}</span>
+                            <span class="full">${full}</span>
+                        </div>
+                    </div>
+                    <div class="price-part">
+                        <div class="uzs-val">${uzs} UZS</div>
+                        <div class="usd-val">${usd}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function filterData() {
+            const query = document.getElementById('searchInput').value.toUpperCase();
+            document.querySelectorAll('.asset-item').forEach(item => {
+                const text = item.innerText.toUpperCase();
+                item.style.display = text.includes(query) ? 'flex' : 'none';
             });
         }
 
-        function filterAssets() { renderAssets(); }
-
-        // Initial Load
-        window.onload = () => {
-            renderAssets();
-            updateChart("BINANCE:BTCUSDT");
-        };
+        updateMarket();
+        setInterval(updateMarket, 60000); // Har daqiqada yangilash
     </script>
 </body>
 </html>
