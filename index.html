@@ -3,210 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orbicxs | Smart Terminal</title>
+    <title>Orbicxs | Finance Terminal</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #0d0d0d; --card: #161616; --border: #262626;
-            --text: #ffffff; --sub: #888; --up: #00ff88; --down: #ff3b3b;
-            --accent: #007aff;
+            --bg: #0a0a0a; --card: #141414; --border: #222;
+            --text: #ffffff; --sub: #888; --up: #00ff88; --accent: #007aff;
         }
 
         body {
             background-color: var(--bg); color: var(--text);
-            font-family: 'Inter', sans-serif; margin: 0; padding: 15px;
+            font-family: 'Inter', sans-serif; margin: 0; padding: 10px;
+            padding-bottom: 50px;
         }
 
-        .container { max-width: 700px; margin: 0 auto; }
+        .container { max-width: 600px; margin: 0 auto; position: relative; }
 
-        /* Header */
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--border); }
-        .header h1 { font-size: 18px; font-weight: 700; letter-spacing: 2px; margin: 0; }
-        .live-dot { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--up); }
-        .dot { height: 8px; width: 8px; background: var(--up); border-radius: 50%; animation: pulse 1.5s infinite; }
+        /* Kalkulyator Bo'limi */
+        .calc-box {
+            background: linear-gradient(145deg, #1a1a1a, #111);
+            padding: 20px; border-radius: 16px; border: 1px solid var(--border);
+            margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .calc-group input {
+            width: 100%; padding: 12px; background: #000; border: 1px solid var(--border);
+            border-radius: 8px; color: var(--up); font-family: 'JetBrains Mono', monospace; font-size: 16px;
+        }
+        .calc-label { font-size: 11px; color: var(--sub); margin-bottom: 5px; text-transform: uppercase; }
 
         /* Tabs */
-        .tabs { display: flex; background: var(--card); border-radius: 12px; padding: 4px; margin: 15px 0; border: 1px solid var(--border); }
+        .tabs { display: flex; background: var(--card); border-radius: 12px; padding: 4px; margin-bottom: 15px; border: 1px solid var(--border); }
         .tab-btn {
-            flex: 1; padding: 10px; border: none; background: none; color: var(--sub);
-            border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 12px; transition: 0.3s;
+            flex: 1; padding: 12px; border: none; background: none; color: var(--sub);
+            border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s;
         }
         .tab-btn.active { background: var(--accent); color: white; }
 
         /* List Area */
-        .list-box { background: var(--card); border-radius: 16px; border: 1px solid var(--border); overflow: hidden; }
-        .item-wrapper { border-bottom: 1px solid var(--border); }
-        .item-wrapper:last-child { border: none; }
-
-        .item-main { 
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 14px 18px; cursor: pointer; transition: 0.2s;
-        }
-        .item-main:hover { background: #1c1c1c; }
-
-        /* Left Section */
+        .item-wrapper { background: var(--card); border-radius: 12px; border: 1px solid var(--border); margin-bottom: 10px; overflow: hidden; }
+        .item-main { display: flex; justify-content: space-between; align-items: center; padding: 15px; cursor: pointer; }
+        
         .left { display: flex; align-items: center; gap: 12px; }
-        .icon { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
-        .icon img { width: 100%; height: 100%; border-radius: 50%; }
+        .flag-img { width: 30px; height: 20px; object-fit: cover; border-radius: 3px; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
+        .coin-img { width: 25px; height: 25px; border-radius: 50%; }
         
-        .name-box { display: flex; flex-direction: column; }
-        .sym { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 14px; }
-        .full { font-size: 10px; color: var(--sub); text-transform: uppercase; }
+        .sym { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 15px; }
+        .price { font-family: 'JetBrains Mono', monospace; color: var(--up); font-weight: 700; }
 
-        /* Right Section */
-        .right { text-align: right; }
-        .price { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 14px; }
-        .chg { font-size: 10px; margin-top: 2px; color: var(--sub); }
+        /* Grafik */
+        .chart-container { height: 0; transition: height 0.4s ease; background: #000; }
+        .chart-container.active { height: 250px; border-top: 1px solid var(--border); }
 
-        /* Chart Area */
-        .chart-container {
-            height: 0; overflow: hidden; transition: height 0.4s ease;
-            background: #000;
+        /* Muallif yozuvi */
+        .author-tag {
+            position: fixed; bottom: 15px; right: 20px;
+            font-size: 12px; color: #444; letter-spacing: 1px;
+            font-weight: 600; text-transform: uppercase;
         }
-        .chart-container.active { height: 220px; border-top: 1px solid var(--border); }
-        
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-        #searchInput {
-            width: 100%; padding: 12px; background: var(--card); border: 1px solid var(--border);
-            border-radius: 10px; color: white; margin-bottom: 15px; outline: none; font-size: 14px;
-        }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="header">
-        <h1>ORBICXS</h1>
-        <div class="live-dot"><div class="dot"></div> LIVE MONITOR</div>
+    <div class="calc-box">
+        <div class="calc-label">Valyuta Konvertatsiyasi (NBU kursi bilan)</div>
+        <div class="calc-grid">
+            <div class="calc-group">
+                <input type="number" id="inputAmount" value="1" oninput="convert()">
+                <select id="convertFrom" style="width:100%; margin-top:5px; background:#222; color:white; border:none; padding:5px; border-radius:5px;" onchange="convert()">
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="RUB">RUB</option>
+                </select>
+            </div>
+            <div class="calc-group">
+                <input type="text" id="outputAmount" readonly>
+                <div style="margin-top:5px; font-size:12px; color:var(--sub); text-align:center;">O'zbek So'mi (UZS)</div>
+            </div>
+        </div>
     </div>
 
     <div class="tabs">
-        <button class="tab-btn active" id="btn-fiat" onclick="switchTab('fiat')">VALYUTA (CBU)</button>
-        <button class="tab-btn" id="btn-crypto" onclick="switchTab('crypto')">KRIPTO (BINANCE)</button>
+        <button class="tab-btn active" onclick="switchTab('fiat', this)">VALYUTA</button>
+        <button class="tab-btn" onclick="switchTab('crypto', this)">KRIPTO</button>
     </div>
 
-    <input type="text" id="searchInput" placeholder="Qidiruv (masalan: USD, BTC)..." onkeyup="filterItems()">
+    <div id="mainList"></div>
 
-    <div id="mainList" class="list-box">
-        </div>
+    <div class="author-tag">g'offorov.sh.z</div>
 </div>
 
 <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-
 <script>
     let currentMode = 'fiat';
-    let socket;
+    let rates = {};
 
-    // Bayroqlar
-    const flags = {
-        "USD": "🇺🇸", "EUR": "🇪🇺", "RUB": "🇷🇺", "GBP": "🇬🇧", "JPY": "🇯🇵", 
-        "TRY": "🇹🇷", "KZT": "🇰🇿", "AED": "🇦🇪", "CNY": "🇨🇳", "CHF": "🇨🇭", "CAD": "🇨🇦"
-    };
+    // Bayroqlar uchun URL (High Quality)
+    const getFlag = (code) => `https://flagcdn.com/w80/${code.toLowerCase().substring(0,2)}.png`;
+    // Kripto uchun URL
+    const getCoin = (sym) => `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${sym.toLowerCase()}.png`;
 
-    // Asosiy kriptolar
-    const cryptos = ["BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "AVAX", "DOGE"];
+    const fiatList = [
+        {id: "USD", name: "AQSH Dollari", flag: "us", tv: "FX_IDC:USDUZS"},
+        {id: "EUR", name: "Yevro", flag: "eu", tv: "FX_IDC:EURUZS"},
+        {id: "RUB", name: "Rossiya Rubli", flag: "ru", tv: "FX_IDC:RUBUZS"},
+        {id: "GBP", name: "Britaniya Funti", flag: "gb", tv: "FX_IDC:GBPUZS"},
+        {id: "TRY", name: "Turkiya Lirasi", flag: "tr", tv: "FX_IDC:TRYUZS"},
+        {id: "KZT", name: "Qozog'iston Tengesi", flag: "kz", tv: "FX_IDC:KZTUZS"}
+    ];
 
-    async function loadCbu() {
-        try {
-            const res = await fetch('https://cbu.uz/uz/arkhiv-kursov-valyut/json/');
-            const data = await res.json();
-            const container = document.getElementById('mainList');
-            container.innerHTML = "";
+    const cryptoList = [
+        {id: "BTC", name: "Bitcoin", tv: "BINANCE:BTCUSDT"},
+        {id: "ETH", name: "Ethereum", tv: "BINANCE:ETHUSDT"},
+        {id: "BNB", name: "Binance Coin", tv: "BINANCE:BNBUSDT"},
+        {id: "SOL", name: "Solana", tv: "BINANCE:SOLUSDT"}
+    ];
 
-            data.forEach(item => {
-                if(flags[item.Ccy]) {
-                    renderRow(item.Ccy, item.CcyNm_UZ, flags[item.Ccy], 
-                              parseFloat(item.Rate).toLocaleString() + " UZS", "FX_IDC:USD" + item.Ccy, false);
-                }
-            });
-        } catch (e) { console.log("CBU error"); }
+    async function loadData() {
+        const res = await fetch('https://cbu.uz/uz/arkhiv-kursov-valyut/json/');
+        const data = await res.json();
+        data.forEach(c => rates[c.Ccy] = parseFloat(c.Rate));
+        render();
+        convert();
     }
 
-    function loadCrypto() {
+    function render() {
         const container = document.getElementById('mainList');
         container.innerHTML = "";
+        const list = currentMode === 'fiat' ? fiatList : cryptoList;
 
-        cryptos.forEach(s => {
-            const img = `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${s.toLowerCase()}.png`;
-            renderRow(s, "Kripto Aktiv", `<img src="${img}">`, "Yuklanmoqda...", `BINANCE:${s}USDT`, true);
-        });
+        list.forEach(item => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'item-wrapper';
+            const icon = currentMode === 'fiat' ? `<img src="${getFlag(item.flag)}" class="flag-img">` : `<img src="${getCoin(item.id)}" class="coin-img">`;
+            const price = currentMode === 'fiat' ? (rates[item.id] ? rates[item.id].toLocaleString() + " UZS" : "---") : "LIVE CHART";
 
-        if (socket) socket.close();
-        socket = new WebSocket(`wss://stream.binance.com:9443/ws/${cryptos.map(s => s.toLowerCase() + 'usdt@ticker').join('/')}`);
-
-        socket.onmessage = (e) => {
-            const data = JSON.parse(e.data);
-            const sym = data.s.replace('USDT', '');
-            const priceEl = document.getElementById('price-' + sym);
-            if (priceEl) priceEl.innerText = "$ " + parseFloat(data.c).toLocaleString();
-        };
-    }
-
-    function renderRow(sym, name, icon, price, tvSym, isCrypto) {
-        const container = document.getElementById('mainList');
-        const wrapper = document.createElement('div');
-        wrapper.className = 'item-wrapper';
-        wrapper.innerHTML = `
-            <div class="item-main" onclick="toggleChart(this, '${tvSym}')">
-                <div class="left">
-                    <div class="icon">${icon}</div>
-                    <div class="name-box">
-                        <span class="sym">${sym}</span>
-                        <span class="full">${name}</span>
+            wrapper.innerHTML = `
+                <div class="item-main" onclick="toggleChart(this, '${item.tv}', '${item.id}')">
+                    <div class="left">
+                        ${icon}
+                        <div class="name-box">
+                            <span class="sym">${item.id}</span>
+                            <div style="font-size:10px; color:var(--sub)">${item.name}</div>
+                        </div>
                     </div>
+                    <div class="price">${price}</div>
                 </div>
-                <div class="right">
-                    <div class="price" id="price-${sym}">${price}</div>
-                    <div class="chg">Batafsil ko'rish</div>
-                </div>
-            </div>
-            <div class="chart-container" id="chart-res-${sym}"></div>
-        `;
-        container.appendChild(wrapper);
+                <div class="chart-container" id="chart-${item.id}"></div>
+            `;
+            container.appendChild(wrapper);
+        });
     }
 
-    function toggleChart(el, symbol) {
-        const container = el.nextElementSibling;
-        const isActive = container.classList.contains('active');
-        
-        // Barcha ochiq grafiklarni yopish
+    function toggleChart(el, tvSym, id) {
+        const chartDiv = el.nextElementSibling;
+        const isOpen = chartDiv.classList.contains('active');
         document.querySelectorAll('.chart-container').forEach(c => c.classList.remove('active'));
         
-        if(!isActive) {
-            container.classList.add('active');
-            const chartId = container.id;
-            
+        if(!isOpen) {
+            chartDiv.classList.add('active');
             new TradingView.widget({
-                "autosize": true,
-                "symbol": symbol,
-                "interval": "H",
-                "theme": "dark",
-                "style": "3",
-                "locale": "uz",
-                "container_id": chartId,
-                "hide_top_toolbar": true,
-                "hide_legend": true,
-                "save_image": false
+                "autosize": true, "symbol": tvSym, "interval": "D", "theme": "dark",
+                "style": "3", "locale": "uz", "container_id": chartDiv.id,
+                "hide_top_toolbar": true, "hide_legend": true
             });
         }
     }
 
-    function switchTab(mode) {
+    function convert() {
+        const amount = document.getElementById('inputAmount').value;
+        const from = document.getElementById('convertFrom').value;
+        const result = amount * (rates[from] || 0);
+        document.getElementById('outputAmount').value = result.toLocaleString() + " UZS";
+    }
+
+    function switchTab(mode, btn) {
         currentMode = mode;
-        document.getElementById('btn-fiat').classList.toggle('active', mode === 'fiat');
-        document.getElementById('btn-crypto').classList.toggle('active', mode === 'crypto');
-        if (socket) socket.close();
-        mode === 'fiat' ? loadCbu() : loadCrypto();
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        render();
     }
 
-    function filterItems() {
-        const val = document.getElementById('searchInput').value.toUpperCase();
-        document.querySelectorAll('.item-wrapper').forEach(item => {
-            item.style.display = item.innerText.toUpperCase().includes(val) ? 'block' : 'none';
-        });
-    }
-
-    loadCbu();
+    loadData();
 </script>
 </body>
 </html>
