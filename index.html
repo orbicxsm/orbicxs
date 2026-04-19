@@ -3,167 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orbicxs Terminal | Crypto & Fiat</title>
+    <title>Orbicxs Global Terminal</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #0d1117;
-            --side: #161b22;
-            --accent: #58a6ff;
-            --up: #39d353;
-            --down: #f85149;
-            --text: #c9d1d9;
+            --bg: #0d1117; --side: #161b22; --accent: #58a6ff;
+            --up: #39d353; --down: #f85149; --text: #c9d1d9;
         }
 
         body {
-            background-color: var(--bg);
-            color: var(--text);
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
+            background-color: var(--bg); color: var(--text);
+            font-family: 'Inter', sans-serif; margin: 0;
+            display: flex; height: 100vh; flex-direction: row;
         }
 
-        /* Sidebar - Narxlar ro'yxati */
+        /* Responsive Mobile Layout */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            .sidebar { width: 100% !important; height: 40vh; }
+            #tv-chart { height: 60vh; }
+        }
+
+        /* Sidebar */
         .sidebar {
-            width: 350px;
-            background: var(--side);
-            border-right: 1px solid #30363d;
-            display: flex;
-            flex-direction: column;
+            width: 380px; background: var(--side);
+            border-right: 1px solid #30363d; display: flex; flex-direction: column;
         }
 
         .brand {
-            padding: 20px;
-            font-size: 22px;
-            font-weight: bold;
-            color: var(--accent);
-            text-align: center;
-            border-bottom: 1px solid #30363d;
-            letter-spacing: 2px;
+            padding: 15px; font-size: 20px; font-weight: bold;
+            color: var(--accent); text-align: center; border-bottom: 1px solid #30363d;
         }
 
-        /* Tab menyusi */
-        .tabs {
-            display: flex;
-            background: #0d1117;
-            padding: 5px;
+        /* Search & Tabs */
+        .search-box { padding: 10px; }
+        .search-box input {
+            width: 100%; padding: 10px; background: #0d1117;
+            border: 1px solid #30363d; border-radius: 6px; color: white; box-sizing: border-box;
         }
 
+        .tabs { display: flex; background: #0d1117; border-bottom: 1px solid #30363d; }
         .tab-btn {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            background: none;
-            color: #8b949e;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: bold;
-            transition: 0.3s;
+            flex: 1; padding: 12px; border: none; background: none;
+            color: #8b949e; cursor: pointer; font-size: 11px; font-weight: bold;
         }
+        .tab-btn.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
 
-        .tab-btn.active {
-            color: var(--accent);
-            border-bottom: 2px solid var(--accent);
-        }
-
-        .asset-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 10px;
-        }
-
+        /* Asset List */
+        .asset-list { flex: 1; overflow-y: auto; scrollbar-width: thin; }
         .asset-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 10px;
-            border-radius: 8px;
-            margin-bottom: 5px;
-            cursor: pointer;
-            transition: 0.2s;
+            display: flex; justify-content: space-between; padding: 12px 15px;
+            border-bottom: 1px solid #21262d; cursor: pointer; transition: 0.2s;
         }
-
         .asset-item:hover { background: #21262d; }
+        .name { font-weight: bold; font-size: 14px; color: #fff; }
+        .price-box { text-align: right; }
+        .price { font-family: monospace; font-size: 14px; font-weight: bold; }
+        .chg { font-size: 11px; margin-top: 2px; }
 
-        .asset-info .name { font-weight: bold; font-size: 14px; display: block; }
-        .asset-info .sub { font-size: 11px; color: #8b949e; }
+        /* Chart */
+        .main-content { flex: 1; position: relative; background: #0d1117; }
+        #tv-chart { width: 100%; height: 100%; }
 
-        .asset-price { text-align: right; }
-        .val { font-family: 'monospace'; font-size: 15px; font-weight: bold; }
-        .chg { font-size: 11px; font-weight: bold; }
-
-        /* Main Content - Grafik */
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        #tv-chart { flex: 1; }
-
-        /* Miltillash effekti */
-        .flash-up { color: var(--up) !important; transition: 0.2s; }
-        .flash-down { color: var(--down) !important; transition: 0.2s; }
-
+        .up { color: var(--up); }
+        .down { color: var(--down); }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
-        <div class="brand">ORBICXS <span style="color:white">X</span></div>
+        <div class="brand">ORBICXS GLOBAL</div>
         
+        <div class="search-box">
+            <input type="text" id="assetSearch" placeholder="Aktivni qidiring (Mas: BTC, UZS, Gold)..." onkeyup="filterAssets()">
+        </div>
+
         <div class="tabs">
-            <button class="tab-btn active" onclick="showTab('crypto')">KRIPTO</button>
-            <button class="tab-btn" onclick="showTab('fiat')">VALYUTA</button>
+            <button class="tab-btn active" onclick="switchTab('crypto')">KRIPTO (Binance)</button>
+            <button class="tab-btn" onclick="switchTab('fiat')">VALYUTALAR</button>
         </div>
 
-        <div id="crypto-list" class="asset-list">
-            <div class="asset-item" onclick="changeChart('BINANCE:BTCUSDT')">
-                <div class="asset-info">
-                    <span class="name">BTC / USDT</span>
-                    <span class="sub">Bitcoin</span>
-                </div>
-                <div class="asset-price">
-                    <div class="val" id="btc-val">Loading...</div>
-                    <div class="chg" id="btc-chg">0.00%</div>
-                </div>
+        <div id="asset-container" class="asset-list">
             </div>
-            <div class="asset-item" onclick="changeChart('BINANCE:ETHUSDT')">
-                <div class="asset-info">
-                    <span class="name">ETH / USDT</span>
-                    <span class="sub">Ethereum</span>
-                </div>
-                <div class="asset-price">
-                    <div class="val" id="eth-val">Loading...</div>
-                    <div class="chg" id="eth-chg">0.00%</div>
-                </div>
-            </div>
-        </div>
-
-        <div id="fiat-list" class="asset-list" style="display:none;">
-            <div class="asset-item" onclick="changeChart('FX_IDC:USDUZS')">
-                <div class="asset-info">
-                    <span class="name">USD / UZS</span>
-                    <span class="sub">Dollar / So'm</span>
-                </div>
-                <div class="asset-price">
-                    <div class="val" id="uzs-val">12,650</div>
-                    <div class="chg" style="color:var(--up)">Live</div>
-                </div>
-            </div>
-            <div class="asset-item" onclick="changeChart('FX:EURUSD')">
-                <div class="asset-info">
-                    <span class="name">EUR / USD</span>
-                    <span class="sub">Yevro / Dollar</span>
-                </div>
-                <div class="asset-price">
-                    <div class="val" id="eur-val">1.0820</div>
-                    <div class="chg" id="eur-chg">Global</div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <div class="main-content">
@@ -172,77 +93,96 @@
 
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     <script>
-        // 1. Varaqalarni almashtirish (Crypto/Fiat)
-        function showTab(type) {
-            document.querySelectorAll('.asset-list').forEach(l => l.style.display = 'none');
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(type + '-list').style.display = 'block';
-            event.target.classList.add('active');
-        }
-
-        // 2. Grafikni yangilash
-        let currentSymbol = "BINANCE:BTCUSDT";
+        let currentTab = 'crypto';
+        let allCrypto = [];
+        let allFiat = [];
         let widget = null;
 
+        // 1. Grafikni Yuklash
         function loadChart(symbol) {
-            widget = new TradingView.widget({
-                "autosize": true,
-                "symbol": symbol,
-                "interval": "H",
-                "timezone": "Etc/UTC",
-                "theme": "dark",
-                "style": "1",
-                "locale": "uz",
-                "container_id": "tv-chart",
-                "hide_side_toolbar": false,
-                "allow_symbol_change": true,
-                "details": true,
-                "hotlist": true,
-                "calendar": true,
+            new TradingView.widget({
+                "autosize": true, "symbol": symbol, "interval": "D",
+                "timezone": "Etc/UTC", "theme": "dark", "style": "1",
+                "locale": "uz", "toolbar_bg": "#f1f3f6", "enable_publishing": false,
+                "allow_symbol_change": true, "container_id": "tv-chart"
             });
         }
+        loadChart("BINANCE:BTCUSDT");
 
-        function changeChart(symbol) {
-            loadChart(symbol);
+        // 2. Tablarni almashtirish
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            renderAssets();
         }
 
-        loadChart(currentSymbol);
-
-        // 3. Haqiqiy vaqtda Kriptovalyuta (Binance WebSocket)
-        const btcWs = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@ticker');
-        const ethWs = new WebSocket('wss://stream.binance.com:9443/ws/ethusdt@ticker');
-
-        function updateUI(id, data) {
-            const valEl = document.getElementById(id + '-val');
-            const chgEl = document.getElementById(id + '-chg');
-            const price = parseFloat(data.c).toLocaleString(undefined, {minimumFractionDigits: 2});
-            
-            // Miltillash
-            const oldPrice = parseFloat(valEl.innerText.replace(/,/g, ''));
-            if (parseFloat(data.c) > oldPrice) valEl.className = 'val flash-up';
-            else if (parseFloat(data.c) < oldPrice) valEl.className = 'val flash-down';
-            setTimeout(() => valEl.className = 'val', 300);
-
-            valEl.innerText = price;
-            chgEl.innerText = (data.P > 0 ? '+' : '') + data.P + '%';
-            chgEl.style.color = data.P >= 0 ? 'var(--up)' : 'var(--down)';
+        // 3. Kriptolarni Binance'dan olish
+        async function getCryptoData() {
+            try {
+                const res = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+                const data = await res.json();
+                // Faqat USDT juftliklarini olish
+                allCrypto = data.filter(s => s.symbol.endsWith('USDT')).slice(0, 100); 
+                if(currentTab === 'crypto') renderAssets();
+            } catch(e) { console.error(e); }
         }
 
-        btcWs.onmessage = (e) => updateUI('btc', JSON.parse(e.data));
-        ethWs.onmessage = (e) => updateUI('eth', JSON.parse(e.data));
-
-        // 4. Fiat API (USD/UZS)
-        async function fetchFiat() {
+        // 4. Valyutalarni API orqali olish
+        async function getFiatData() {
             try {
                 const res = await fetch('https://open.er-api.com/v6/latest/USD');
                 const data = await res.json();
-                document.getElementById('uzs-val').innerText = data.rates.UZS.toLocaleString();
-                document.getElementById('eur-val').innerText = data.rates.EUR.toFixed(4);
-            } catch(e) {}
+                allFiat = Object.keys(data.rates).map(key => ({
+                    symbol: key,
+                    price: data.rates[key],
+                    name: key + " / USD"
+                }));
+                if(currentTab === 'fiat') renderAssets();
+            } catch(e) { console.error(e); }
         }
-        setInterval(fetchFiat, 60000);
-        fetchFiat();
 
+        // 5. Ro'yxatni chiqarish
+        function renderAssets() {
+            const container = document.getElementById('asset-container');
+            container.innerHTML = '';
+            const list = (currentTab === 'crypto') ? allCrypto : allFiat;
+            const search = document.getElementById('assetSearch').value.toUpperCase();
+
+            list.forEach(item => {
+                const symbolText = item.symbol || item.name;
+                if(!symbolText.includes(search)) return;
+
+                const div = document.createElement('div');
+                div.className = 'asset-item';
+                
+                // Grafikni o'zgartirish logikasi
+                let tvSymbol = currentTab === 'crypto' ? `BINANCE:${item.symbol}` : `FX_IDC:USD${item.symbol}`;
+                div.onclick = () => loadChart(tvSymbol);
+
+                let priceDisplay = currentTab === 'crypto' ? parseFloat(item.lastPrice).toLocaleString() : (1 / item.price).toFixed(4);
+                let changeDisplay = currentTab === 'crypto' ? item.priceChangePercent + "%" : "Live";
+                let colorClass = (currentTab === 'crypto' && parseFloat(item.priceChangePercent) < 0) ? 'down' : 'up';
+
+                div.innerHTML = `
+                    <div class="asset-info">
+                        <span class="name">${symbolText}</span>
+                    </div>
+                    <div class="price-box">
+                        <div class="price">${priceDisplay}</div>
+                        <div class="chg ${colorClass}">${changeDisplay}</div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function filterAssets() { renderAssets(); }
+
+        // Ma'lumotlarni yangilab turish
+        getCryptoData();
+        getFiatData();
+        setInterval(getCryptoData, 10000); // Har 10 soniyada kriptolarni yangilash
     </script>
 </body>
 </html>
