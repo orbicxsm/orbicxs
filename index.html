@@ -7,6 +7,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <style>
         :root {
+            --bg: #ffffff; --card: #f8f9fa; --border: #dee2e6;
+            --text: #202124; --sub: #70757a; --up: #137333; --accent: #1a73e8;
+        }
+
+        [data-theme="dark"] {
             --bg: #050505; --card: #111111; --border: #222222;
             --text: #ffffff; --sub: #888888; --up: #00ff88; --accent: #007aff;
         }
@@ -14,19 +19,32 @@
         body {
             background-color: var(--bg); color: var(--text);
             font-family: 'Inter', sans-serif; margin: 0; padding: 15px;
-            padding-bottom: 100px;
+            transition: background 0.3s ease;
         }
 
-        .container { max-width: 600px; margin: 0 auto; }
+        .container { max-width: 650px; margin: 0 auto; position: relative; }
 
-        /* Kalkulyator */
+        /* Top Bar: Muallif va Rejim */
+        .top-bar {
+            display: flex; justify-content: flex-end; align-items: center;
+            gap: 15px; margin-bottom: 20px;
+        }
+        .author-name { font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: 1px; }
+        
+        .theme-toggle {
+            background: var(--card); border: 1px solid var(--border);
+            color: var(--text); padding: 5px 12px; border-radius: 20px;
+            cursor: pointer; font-size: 12px; font-weight: 600;
+        }
+
+        /* Calc Section */
         .calc-box {
             background: var(--card); padding: 20px; border-radius: 16px;
             border: 1px solid var(--border); margin-bottom: 20px;
         }
         .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .calc-group input, .calc-group select {
-            width: 100%; padding: 12px; background: #000; border: 1px solid var(--border);
+            width: 100%; padding: 12px; background: var(--bg); border: 1px solid var(--border);
             border-radius: 8px; color: var(--up); font-family: 'JetBrains Mono', monospace; outline: none;
         }
 
@@ -40,7 +58,7 @@
         .item-main { display: flex; justify-content: space-between; align-items: center; padding: 15px; cursor: pointer; }
         
         .left { display: flex; align-items: center; gap: 15px; }
-        .flag-box { width: 32px; height: 22px; border-radius: 3px; overflow: hidden; }
+        .flag-box { width: 32px; height: 22px; border-radius: 3px; overflow: hidden; border: 1px solid var(--border); }
         .flag-box img { width: 100%; height: 100%; object-fit: cover; }
         
         .sym { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 15px; }
@@ -48,22 +66,18 @@
 
         /* Chart */
         .chart-container { height: 0; transition: height 0.3s ease-out; background: #000; }
-        .chart-container.active { height: 320px; border-top: 1px solid var(--border); }
+        .chart-container.active { height: 350px; border-top: 1px solid var(--border); }
 
-        /* MUALLIF YOZUVI (Fixed) */
-        .author-tag { 
-            position: fixed; bottom: 20px; right: 20px; 
-            font-size: 14px; color: #ffffff; font-weight: 800; 
-            z-index: 99999; background: #007aff; padding: 8px 15px; 
-            border-radius: 30px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            pointer-events: none; text-transform: lowercase;
-        }
+        @media (max-width: 500px) { .calc-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
-<body>
+<body data-theme="dark">
 
 <div class="container">
-    <h2 style="text-align: center; letter-spacing: 2px; font-size: 18px; margin-bottom: 20px;">ORBICXS FINANCE</h2>
+    <div class="top-bar">
+        <span class="author-name">g'offorov.sh.z</span>
+        <button class="theme-toggle" onclick="toggleTheme()">🌓 REJIM</button>
+    </div>
 
     <div class="calc-box">
         <div class="calc-grid">
@@ -73,7 +87,7 @@
             </div>
             <div class="calc-group">
                 <input type="text" id="outputAmt" readonly placeholder="Hisoblanmoqda...">
-                <div style="font-size:10px; color:var(--sub); margin-top:8px; text-align:center;">O'ZBEK SO'MI (UZS)</div>
+                <div style="font-size:10px; color:var(--sub); margin-top:8px; text-align:center;">MARKAZIY BANK KURSI (UZS)</div>
             </div>
         </div>
     </div>
@@ -84,20 +98,18 @@
     </div>
 
     <div id="mainList"></div>
-
-    <div class="author-tag">g'offorov.sh.z</div>
 </div>
 
 <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 <script>
     let mode = 'fiat';
-    let usdToUzs = 12850; // Standart qiymat
+    let usdToUzs = 1;
     let allRates = {};
     let cbuData = [];
     let socket;
 
-    // Kengaytirilgan Kripto ro'yxati (TON qo'shildi)
-    const cryptos = ["BTC", "ETH", "TON", "BNB", "SOL", "XRP", "ADA", "DOGE", "DOT", "LINK", "LTC"];
+    // Kripto ro'yxati (TON bilan)
+    const cryptos = ["BTC", "ETH", "TON", "BNB", "SOL", "XRP", "ADA", "DOGE"];
 
     async function init() {
         try {
@@ -110,12 +122,12 @@
                 if(c.Ccy === 'USD') usdToUzs = parseFloat(c.Rate);
                 
                 const opt = document.createElement('option');
-                opt.value = c.Ccy; opt.innerText = c.Ccy;
+                opt.value = c.Ccy; opt.innerText = `${c.Ccy} (${c.CcyNm_UZ})`;
                 select.appendChild(opt);
             });
             render();
             convert();
-        } catch (e) { console.error("API error"); }
+        } catch (e) { console.error("Markaziy bank bilan ulanishda xatolik."); }
     }
 
     function render() {
@@ -127,15 +139,15 @@
             cbuData.forEach(c => {
                 const flagCode = c.Ccy === 'EUR' ? 'eu' : c.Ccy.substring(0,2).toLowerCase();
                 const flag = `https://flagcdn.com/w80/${flagCode}.png`;
-                // Grafik uchun: Agar juftlik bo'lmasa, universal USD formatga o'tadi
-                const tvSym = (c.Ccy === 'USD' || c.Ccy === 'EUR' || c.Ccy === 'RUB') ? `FX_IDC:${c.Ccy}UZS` : `FX_IDC:USD${c.Ccy}`;
+                // Grafik va qiymatni bir xil qilish uchun Markaziy Bank juftligi
+                const tvSym = `FX_IDC:${c.Ccy}UZS`;
                 createItem(c.Ccy, c.CcyNm_UZ, flag, parseFloat(c.Rate).toLocaleString() + " UZS", tvSym);
             });
         } else {
             cryptos.forEach(s => {
                 const icon = `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${s.toLowerCase()}.png`;
                 const tvSym = s === "TON" ? "OKX:TONUSDT" : `BINANCE:${s}USDT`;
-                createItem(s, "Live Market", icon, "Yuklanmoqda...", tvSym);
+                createItem(s, "Binance Live Market", icon, "Yuklanmoqda...", tvSym);
             });
             startCryptoLive();
         }
@@ -145,7 +157,7 @@
         const wrapper = document.createElement('div');
         wrapper.className = 'item-wrapper';
         wrapper.innerHTML = `
-            <div class="item-main" onclick="toggleChart(this, '${tv}', '${sym}')">
+            <div class="item-main" onclick="toggleChart(this, '${tv}')">
                 <div class="left">
                     <div class="flag-box"><img src="${img}" onerror="this.src='https://flagcdn.com/w80/un.png'"></div>
                     <div class="name-box">
@@ -165,15 +177,16 @@
         socket.onmessage = (e) => {
             const data = JSON.parse(e.data);
             const sym = data.s.replace('USDT', '');
-            const priceUZS = (parseFloat(data.c) * usdToUzs).toLocaleString();
+            const priceUZS = (parseFloat(data.c) * usdToUzs).toLocaleString(undefined, {minimumFractionDigits: 0});
             const el = document.getElementById('p-' + sym);
             if (el) el.innerText = priceUZS + " UZS";
         };
     }
 
-    function toggleChart(el, tv, sym) {
+    function toggleChart(el, tv) {
         const chartBox = el.nextElementSibling;
         const isOpen = chartBox.classList.contains('active');
+        const theme = document.body.getAttribute('data-theme') || 'light';
         
         document.querySelectorAll('.chart-container').forEach(c => {
             c.classList.remove('active');
@@ -183,7 +196,7 @@
         if(!isOpen) {
             chartBox.classList.add('active');
             new TradingView.widget({
-                "autosize": true, "symbol": tv, "interval": "H", "theme": "dark",
+                "autosize": true, "symbol": tv, "interval": "D", "theme": theme,
                 "style": "3", "locale": "uz", "container_id": chartBox.id,
                 "hide_top_toolbar": true, "hide_legend": true, "save_image": false
             });
@@ -195,6 +208,14 @@
         const from = document.getElementById('selectFrom').value;
         const res = amt * (allRates[from] || 0);
         document.getElementById('outputAmt').value = res.toLocaleString() + " UZS";
+    }
+
+    function toggleTheme() {
+        const body = document.body;
+        const current = body.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        body.setAttribute('data-theme', next);
+        render(); // Grafik rangini yangilash uchun
     }
 
     function switchTab(m) {
