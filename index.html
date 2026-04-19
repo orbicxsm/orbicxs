@@ -3,227 +3,267 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Finance | Orbicxs Terminal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Google Finance & Binance Terminal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #ffffff; --card: #f8f9fa; --border: #dadce0;
-            --text: #202124; --sub: #70757a; --up: #137333; --accent: #1a73e8;
+            --text: #202124; --sub: #5f6368; --blue: #1a73e8; --green: #137333; --red: #d93025;
         }
         [data-theme="dark"] {
-            --bg: #121212; --card: #1e1e1e; --border: #3c4043;
-            --text: #e8eaed; --sub: #9aa0a6; --up: #81c995; --accent: #8ab4f8;
+            --bg: #171717; --card: #242424; --border: #3c4043;
+            --text: #e8eaed; --sub: #9aa0a6; --blue: #8ab4f8; --green: #81c995; --red: #f28b82;
         }
 
-        body { background-color: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 15px; transition: 0.2s; }
-        .container { max-width: 650px; margin: 0 auto; }
+        body {
+            background-color: var(--bg); color: var(--text);
+            font-family: 'Google Sans', Arial, sans-serif; margin: 0; padding: 10px;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-        /* Header Section */
+        .container { max-width: 680px; margin: 0 auto; }
+
+        /* Professional Header */
         .header {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 0; border-bottom: 1px solid var(--border); margin-bottom: 20px;
+            padding: 10px 0 15px 0; border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
         }
-        .logo { font-size: 20px; font-weight: 500; color: var(--sub); }
-        .logo b { color: var(--text); font-weight: 700; }
+        .logo { font-size: 22px; color: var(--sub); font-weight: 400; }
+        .logo b { color: var(--text); }
         
-        .top-right { display: flex; align-items: center; gap: 15px; }
-        .author { font-size: 13px; font-weight: 800; color: var(--accent); text-transform: lowercase; }
-        .theme-btn { 
-            background: var(--card); border: 1px solid var(--border); color: var(--text);
-            padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;
-        }
-
-        /* Calculator Panel */
-        .calc-panel {
+        .nav-right { display: flex; align-items: center; gap: 20px; }
+        .author-tag { font-size: 13px; font-weight: 700; color: var(--blue); letter-spacing: 0.3px; }
+        .mode-btn {
             background: var(--card); border: 1px solid var(--border);
-            border-radius: 8px; padding: 20px; margin-bottom: 20px;
+            color: var(--text); padding: 7px 15px; border-radius: 6px;
+            cursor: pointer; font-size: 12px; font-weight: 600;
+            transition: 0.2s;
         }
-        .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .calc-grid input, .calc-grid select {
-            width: 100%; padding: 12px; background: var(--bg); border: 1px solid var(--border);
-            border-radius: 4px; color: var(--text); font-size: 18px; font-weight: 600; outline: none;
-        }
+        .mode-btn:hover { border-color: var(--blue); }
 
-        /* Finance Tabs */
-        .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
-        .tab { 
-            padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border);
-            cursor: pointer; font-size: 13px; font-weight: 500; background: var(--card);
+        /* Main Hero Card */
+        .hero {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 24px; margin-bottom: 20px;
         }
-        .tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .hero-info { margin-bottom: 20px; }
+        .hero-pair { font-size: 14px; color: var(--sub); margin-bottom: 4px; }
+        .hero-price { font-size: 36px; font-weight: 400; }
+        .hero-price span { font-size: 18px; color: var(--sub); }
 
-        /* Market List */
-        .market-list { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg); }
-        .list-item { 
+        /* Calculator Input */
+        .calc-group { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        input {
+            width: 100%; padding: 14px; background: var(--bg);
+            border: 1px solid var(--border); border-radius: 8px;
+            color: var(--text); font-size: 20px; font-family: 'Roboto Mono', monospace;
+            box-sizing: border-box; outline: none; transition: border-color 0.2s;
+        }
+        input:focus { border-color: var(--blue); }
+
+        /* Tab Navigation */
+        .tabs { display: flex; gap: 12px; margin-bottom: 15px; }
+        .tab {
+            padding: 10px 20px; border-radius: 24px; border: 1px solid var(--border);
+            cursor: pointer; font-size: 14px; font-weight: 500; background: var(--card);
+            transition: 0.2s;
+        }
+        .tab.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+        /* Data List Section */
+        .market-box { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--bg); }
+        .list-item {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 16px 20px; border-bottom: 1px solid var(--border); cursor: pointer;
+            padding: 18px 24px; border-bottom: 1px solid var(--border); cursor: pointer;
+            transition: 0.1s;
         }
         .list-item:hover { background: var(--card); }
         
-        .item-left { display: flex; align-items: center; gap: 15px; }
-        .flag-img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
-        .coin-icon { width: 32px; height: 32px; border-radius: 50%; }
+        .item-left { display: flex; align-items: center; gap: 16px; }
+        .asset-icon { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); }
+        
+        .asset-meta { display: flex; flex-direction: column; }
+        .asset-symbol { font-weight: 700; font-size: 16px; }
+        .asset-source { font-size: 10px; color: var(--sub); text-transform: uppercase; margin-top: 2px; }
 
-        .price-info { text-align: right; }
-        .price-now { font-weight: 700; font-size: 16px; color: var(--text); }
-        .sync-label { font-size: 10px; color: var(--up); font-weight: 700; margin-top: 4px; }
+        .item-right { text-align: right; }
+        .asset-price { font-family: 'Roboto Mono', monospace; font-weight: 700; font-size: 16px; }
+        .asset-change { font-size: 13px; font-weight: 500; margin-top: 2px; }
 
-        /* Chart Area */
-        .chart-box { height: 0; overflow: hidden; transition: 0.3s; background: #000; }
-        .chart-box.active { height: 400px; border-top: 1px solid var(--border); }
+        /* Google Finance Graph Frame */
+        .graph-wrapper { height: 0; overflow: hidden; transition: 0.4s ease; background: #fff; }
+        .graph-wrapper.active { height: 420px; border-top: 1px solid var(--border); }
+        iframe { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body data-theme="dark">
 
 <div class="container">
-    <div class="header">
+    <header class="header">
         <div class="logo">Google <b>Finance</b></div>
-        <div class="top-right">
-            <span class="author">g'offorov.sh.z</span>
-            <button class="theme-btn" onclick="toggleTheme()">🌓 REJIM</button>
+        <div class="nav-right">
+            <span class="author-tag">g'offorov.sh.z</span>
+            <button class="mode-btn" onclick="toggleTheme()">🌓 REJIM</button>
         </div>
-    </div>
+    </header>
 
-    <div class="calc-panel">
-        <div class="calc-grid">
-            <input type="number" id="baseInput" value="1" oninput="doCalc()">
-            <input type="text" id="resultOutput" readonly>
+    <section class="hero">
+        <div class="hero-info">
+            <div class="hero-pair">Amerika Dollari / O'zbekiston So'mi</div>
+            <div class="hero-price" id="main-usd-price">12,950.00 <span>UZS</span></div>
         </div>
-        <div style="font-size:12px; color:var(--sub); margin-top:10px;">Valyuta: <b>USD/UZS</b> (Google Real-time Market)</div>
-    </div>
+        <div class="calc-group">
+            <input type="number" id="inputAmount" value="1" oninput="runCalculator()">
+            <input type="text" id="resultAmount" readonly>
+        </div>
+    </section>
 
-    <div class="tabs">
-        <div class="tab active" id="fiatTab" onclick="setMode('fiat')">Valyutalar</div>
-        <div class="tab" id="cryptoTab" onclick="setMode('crypto')">Kriptovalyuta</div>
-    </div>
+    <nav class="tabs">
+        <div class="tab active" id="tab-fiat" onclick="switchMode('fiat')">Valyutalar</div>
+        <div class="tab" id="tab-crypto" onclick="switchMode('crypto')">Binance Kripto</div>
+    </nav>
 
-    <div class="market-list" id="marketList"></div>
+    <div class="market-box" id="market-list"></div>
 </div>
 
-<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 <script>
-    let mode = 'fiat';
-    let usdUzsPrice = 12920; // Dynamic update
-    let socket;
+    let currentMode = 'fiat';
+    let globalUsdUzs = 12950;
+    let binanceWS;
 
-    // Google Finance bazasidagi asosiy valyutalar
     const fiats = [
-        {id: "USD", name: "AQSH Dollari", flag: "us", tv: "FX_IDC:USDUZS"},
-        {id: "EUR", name: "Yevropa Yevrosi", flag: "eu", tv: "FX_IDC:EURUZS"},
-        {id: "RUB", name: "Rossiya Rubli", flag: "ru", tv: "FX_IDC:RUBUZS"},
-        {id: "GBP", name: "Britaniya Funti", flag: "gb", tv: "FX_IDC:GBPUZS"},
-        {id: "TRY", name: "Turkiya Lirasi", flag: "tr", tv: "FX_IDC:TRYUZS"},
-        {id: "KZT", name: "Qozog'iston Tengesi", flag: "kz", tv: "FX_IDC:KZTUZS"}
+        {id: "USD", name: "Amerika Dollari", flag: "us", pair: "USD-UZS"},
+        {id: "EUR", name: "Yevropa Yevrosi", flag: "eu", pair: "EUR-UZS"},
+        {id: "RUB", name: "Rossiya Rubli", flag: "ru", pair: "RUB-UZS"},
+        {id: "TRY", name: "Turkiya Lirasi", flag: "tr", pair: "TRY-UZS"},
+        {id: "GBP", name: "Britaniya Funti", flag: "gb", pair: "GBP-UZS"},
+        {id: "KZT", name: "Qozog'iston Tengesi", flag: "kz", pair: "KZT-UZS"}
     ];
 
-    const cryptos = ["BTC", "ETH", "TON", "SOL", "BNB", "XRP", "NOT", "DOGE"];
+    const cryptos = ["BTC", "ETH", "TON", "SOL", "BNB", "XRP", "DOGE", "PEPE", "NOT"];
 
-    async function fetchGooglePrice() {
-        // Haqiqiy birja narxini simulyatsiya va sinxronizatsiya qilish
+    async function initTerminal() {
+        // Binance-dan real-time USD/UZS kursini olish
         try {
-            const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=USDTUZS');
-            const data = await res.json();
-            usdUzsPrice = parseFloat(data.price) || 12940;
-        } catch {
-            usdUzsPrice = 12950; 
-        }
-        render();
-        doCalc();
+            const r = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=USDTUZS');
+            const d = await r.json();
+            globalUsdUzs = parseFloat(d.price);
+            document.getElementById('main-usd-price').innerHTML = `${globalUsdUzs.toLocaleString()} <span>UZS</span>`;
+        } catch(e) { console.error("Price sync error"); }
+        
+        renderList();
+        runCalculator();
     }
 
-    function render() {
-        const list = document.getElementById('marketList');
+    function renderList() {
+        const list = document.getElementById('market-list');
         list.innerHTML = "";
-        if(socket) socket.close();
+        if(binanceWS) binanceWS.close();
 
-        if(mode === 'fiat') {
+        if(currentMode === 'fiat') {
             fiats.forEach(f => {
-                // Bu erda narxlar grafik bilan bir xil chiqishi uchun 
-                // xalqaro bozordagi nisbatlar olinadi
-                let displayPrice = (usdUzsPrice).toLocaleString(); 
-                if(f.id === "RUB") displayPrice = (usdUzsPrice / 92).toLocaleString();
-                if(f.id === "EUR") displayPrice = (usdUzsPrice * 1.08).toLocaleString();
-                
-                addItem(f.id, f.name, `https://flagcdn.com/w80/${f.flag}.png`, displayPrice + " UZS", f.tv, false);
+                const row = document.createElement('div');
+                row.innerHTML = `
+                    <div class="list-item" onclick="toggleGoogleGraph('${f.pair}')">
+                        <div class="item-left">
+                            <img src="https://flagcdn.com/w80/${f.flag}.png" class="asset-icon">
+                            <div class="asset-meta">
+                                <span class="asset-symbol">${f.id} / UZS</span>
+                                <span class="asset-source">Google Finance Real-time</span>
+                            </div>
+                        </div>
+                        <div class="item-right">
+                            <div class="asset-price">Bozor kursi</div>
+                            <div class="asset-change" style="color:var(--green)">Live Data</div>
+                        </div>
+                    </div>
+                    <div class="graph-wrapper" id="graph-${f.pair}"></div>
+                `;
+                list.appendChild(row);
             });
         } else {
             cryptos.forEach(c => {
-                const icon = `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${c.toLowerCase()}.png`;
-                const tvSym = (c === "TON" || c === "NOT") ? `OKX:${c}USDT` : `BINANCE:${c}USDT`;
-                addItem(c, "Birja Narxi", icon, "Yuklanmoqda...", tvSym, true);
+                const row = document.createElement('div');
+                row.innerHTML = `
+                    <div class="list-item" onclick="toggleGoogleGraph('${c}-USD')">
+                        <div class="item-left">
+                            <img src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${c.toLowerCase()}.png" class="asset-icon">
+                            <div class="asset-meta">
+                                <span class="asset-symbol">${c} / USDT</span>
+                                <span class="asset-source">Binance Exchange Live</span>
+                            </div>
+                        </div>
+                        <div class="item-right">
+                            <div class="asset-price" id="p-${c}">---</div>
+                            <div class="asset-change" id="c-${c}">0.00%</div>
+                        </div>
+                    </div>
+                    <div class="graph-wrapper" id="graph-${c}-USD"></div>
+                `;
+                list.appendChild(row);
             });
-            startCryptoLive();
+            initBinanceSocket();
         }
     }
 
-    function addItem(id, full, img, price, tv, isCrypto) {
-        const row = document.createElement('div');
-        row.innerHTML = `
-            <div class="list-item" onclick="openChart(this, '${tv}')">
-                <div class="item-left">
-                    ${isCrypto ? `<img src="${img}" class="coin-icon">` : `<img src="${img}" class="flag-img">`}
-                    <div>
-                        <div style="font-weight:700; font-size:15px;">${id}</div>
-                        <div style="font-size:11px; color:var(--sub);">${full}</div>
-                    </div>
-                </div>
-                <div class="price-info">
-                    <div class="price-now" id="p-${id}">${price}</div>
-                    <div class="sync-label">GOOGLE FINANCE DATA</div>
-                </div>
-            </div>
-            <div class="chart-box" id="chart-${id}"></div>
-        `;
-        document.getElementById('marketList').appendChild(row);
-    }
-
-    function startCryptoLive() {
-        const binanceList = cryptos.filter(s => !["TON","NOT"].includes(s));
-        socket = new WebSocket(`wss://stream.binance.com:9443/ws/${binanceList.map(s => s.toLowerCase()+'usdt@ticker').join('/')}`);
-        socket.onmessage = (e) => {
-            const d = JSON.parse(e.data);
-            const sym = d.s.replace('USDT','');
-            const uzs = (parseFloat(d.c) * usdUzsPrice).toLocaleString(undefined, {maximumFractionDigits:0});
-            const el = document.getElementById('p-' + sym);
-            if(el) el.innerText = uzs + " UZS";
+    function initBinanceSocket() {
+        // Binance-dan jonli kripto narxlari
+        const streams = cryptos.filter(x => x !== 'TON' && x !== 'NOT').map(x => x.toLowerCase() + 'usdt@ticker').join('/');
+        binanceWS = new WebSocket(`wss://stream.binance.com:9443/ws/${streams}`);
+        
+        binanceWS.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            const symbol = data.s.replace('USDT', '');
+            const priceEl = document.getElementById('p-' + symbol);
+            const changeEl = document.getElementById('c-' + symbol);
+            
+            if(priceEl) {
+                const price = parseFloat(data.c);
+                priceEl.innerText = price > 1 ? price.toLocaleString() : price.toFixed(5);
+                const pct = parseFloat(data.P);
+                changeEl.innerText = (pct >= 0 ? '+' : '') + pct + '%';
+                changeEl.style.color = pct >= 0 ? 'var(--green)' : 'var(--red)';
+            }
         };
     }
 
-    function openChart(el, sym) {
-        const box = el.nextElementSibling;
-        const active = box.classList.contains('active');
-        document.querySelectorAll('.chart-box').forEach(b => { b.classList.remove('active'); b.innerHTML = ""; });
+    function toggleGoogleGraph(pair) {
+        const wrap = document.getElementById('graph-' + pair);
+        const isOpen = wrap.classList.contains('active');
         
-        if(!active) {
-            box.classList.add('active');
-            const theme = document.body.getAttribute('data-theme') || 'light';
-            new TradingView.widget({
-                "autosize": true, "symbol": sym, "interval": "D", "theme": theme,
-                "style": "2", "container_id": box.id, "hide_top_toolbar": true, 
-                "hide_legend": true, "withdateranges": true, "save_image": false
-            });
+        // Boshqalarni yopish
+        document.querySelectorAll('.graph-wrapper').forEach(w => { w.classList.remove('active'); w.innerHTML = ""; });
+        
+        if(!isOpen) {
+            wrap.classList.add('active');
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            // Google Finance iframe-ni yuklash
+            wrap.innerHTML = `<iframe src="https://www.google.com/finance/quote/${pair}" 
+                style="${isDark ? 'filter: invert(0.9) hue-rotate(180deg) contrast(1.2);' : ''}"></iframe>`;
         }
     }
 
-    function doCalc() {
-        const amt = document.getElementById('baseInput').value;
-        document.getElementById('resultOutput').value = (amt * usdUzsPrice).toLocaleString() + " UZS";
+    function runCalculator() {
+        const amount = document.getElementById('inputAmount').value;
+        document.getElementById('resultAmount').value = (amount * globalUsdUzs).toLocaleString() + " UZS";
     }
 
-    function setMode(m) {
-        mode = m;
-        document.getElementById('fiatTab').classList.toggle('active', m === 'fiat');
-        document.getElementById('cryptoTab').classList.toggle('active', m === 'crypto');
-        render();
+    function switchMode(m) {
+        currentMode = m;
+        document.getElementById('tab-fiat').classList.toggle('active', m === 'fiat');
+        document.getElementById('tab-crypto').classList.toggle('active', m === 'crypto');
+        renderList();
     }
 
     function toggleTheme() {
-        const b = document.body;
-        b.setAttribute('data-theme', b.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-        render();
+        const body = document.body;
+        const newTheme = body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        body.setAttribute('data-theme', newTheme);
+        renderList();
     }
 
-    fetchGooglePrice();
+    initTerminal();
 </script>
 </body>
 </html>
