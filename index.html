@@ -3,82 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orbicxs | Market Terminal</title>
+    <title>Orbicxs | Live Market</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #ffffff; --card: #f8f9fa; --border: #dee2e6;
             --text: #202124; --sub: #70757a; --up: #137333; --accent: #1a73e8;
         }
-
         [data-theme="dark"] {
-            --bg: #0a0a0a; --card: #141414; --border: #222222;
-            --text: #ffffff; --sub: #888888; --up: #00ff88; --accent: #007aff;
+            --bg: #080808; --card: #121212; --border: #252525;
+            --text: #ffffff; --sub: #aaaaaa; --up: #00ff88; --accent: #2979ff;
         }
 
         body {
             background-color: var(--bg); color: var(--text);
-            font-family: 'Inter', sans-serif; margin: 0; padding: 15px;
-            transition: 0.3s;
+            font-family: 'Inter', sans-serif; margin: 0; padding: 10px;
+            transition: background 0.3s ease;
         }
 
-        .container { max-width: 600px; margin: 0 auto; }
+        .container { max-width: 650px; margin: 0 auto; position: relative; }
 
         /* Top Header */
         .header-top {
             display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 15px; border-bottom: 1px solid var(--border);
-            padding-bottom: 10px;
+            padding: 10px 0; border-bottom: 1px solid var(--border); margin-bottom: 15px;
         }
-        .logo { font-size: 16px; font-weight: 800; letter-spacing: 1px; }
-        .top-right { display: flex; align-items: center; gap: 15px; }
-        .author { font-size: 12px; font-weight: 700; color: var(--accent); }
-        .mode-btn { 
-            background: var(--accent); color: white; border: none; 
-            padding: 4px 10px; border-radius: 20px; cursor: pointer; font-size: 11px;
+        .logo { font-weight: 800; font-size: 18px; letter-spacing: 1px; }
+        .top-ctrl { display: flex; align-items: center; gap: 15px; }
+        .author { font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: 0.5px; }
+        .theme-btn { 
+            background: var(--card); border: 1px solid var(--border); 
+            color: var(--text); padding: 6px 12px; border-radius: 20px; 
+            cursor: pointer; font-size: 11px; font-weight: 600;
         }
 
         /* Calculator */
-        .calc-panel {
+        .calc-box {
             background: var(--card); border: 1px solid var(--border);
-            border-radius: 12px; padding: 15px; margin-bottom: 15px;
+            border-radius: 16px; padding: 20px; margin-bottom: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
         }
-        .calc-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .calc-row input, .calc-row select {
-            width: 100%; padding: 10px; background: var(--bg); border: 1px solid var(--border);
-            border-radius: 8px; color: var(--up); font-weight: 700; font-family: 'JetBrains Mono';
+        .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .calc-grid input, .calc-grid select {
+            width: 100%; padding: 12px; background: var(--bg); border: 1px solid var(--border);
+            border-radius: 10px; color: var(--up); font-family: 'JetBrains Mono'; font-weight: 700; outline: none;
         }
 
-        /* Tab Menu */
-        .tabs { display: flex; gap: 5px; margin-bottom: 15px; }
-        .tab { 
-            flex: 1; padding: 10px; border: 1px solid var(--border); background: var(--card);
-            border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 700; text-align: center;
+        /* Tabs */
+        .tabs { display: flex; gap: 8px; margin-bottom: 15px; }
+        .tab-item { 
+            flex: 1; padding: 12px; border: 1px solid var(--border); background: var(--card);
+            border-radius: 10px; cursor: pointer; font-size: 12px; font-weight: 700; text-align: center;
+            transition: 0.2s;
         }
-        .tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .tab-item.active { background: var(--accent); color: white; border-color: var(--accent); }
 
-        /* List Items */
-        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-        .row { 
+        /* List Area */
+        .list-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+        .list-row { 
             display: flex; justify-content: space-between; align-items: center; 
-            padding: 12px 15px; border-bottom: 1px solid var(--border); cursor: pointer;
+            padding: 15px 20px; border-bottom: 1px solid var(--border); cursor: pointer;
+            transition: 0.2s;
         }
-        .row:hover { background: rgba(0,0,0,0.02); }
-        .row-left { display: flex; align-items: center; gap: 12px; }
-        .flag { width: 30px; height: 20px; border-radius: 2px; border: 1px solid var(--border); }
-        .coin-icon { width: 25px; height: 25px; border-radius: 50%; }
+        .list-row:hover { background: rgba(128,128,128,0.05); }
+        .row-l { display: flex; align-items: center; gap: 15px; }
+        .f-box { width: 35px; height: 24px; border-radius: 3px; border: 1px solid var(--border); overflow: hidden; }
+        .f-box img { width: 100%; height: 100%; object-fit: cover; }
+        .c-icon { width: 30px; height: 30px; border-radius: 50%; }
         
-        .name-grp { display: flex; flex-direction: column; }
-        .ticker { font-family: 'JetBrains Mono'; font-weight: 700; font-size: 14px; }
+        .name-info { display: flex; flex-direction: column; }
+        .sym-code { font-family: 'JetBrains Mono'; font-weight: 700; font-size: 15px; }
         .full-name { font-size: 10px; color: var(--sub); text-transform: uppercase; }
 
-        .price-grp { text-align: right; }
-        .price { font-family: 'JetBrains Mono'; font-weight: 700; color: var(--up); font-size: 14px; }
-        .tag { font-size: 9px; color: var(--sub); }
+        .price-info { text-align: right; }
+        .live-price { font-family: 'JetBrains Mono'; font-weight: 700; color: var(--up); font-size: 15px; }
+        .status-tag { font-size: 9px; color: var(--sub); font-weight: 600; }
 
-        /* Chart Section */
-        .chart-box { height: 0; overflow: hidden; transition: 0.3s; background: #000; }
-        .chart-box.active { height: 350px; border-top: 1px solid var(--border); }
+        /* Chart */
+        .chart-wrap { height: 0; overflow: hidden; transition: 0.3s ease; background: #000; }
+        .chart-wrap.active { height: 380px; border-top: 1px solid var(--border); }
     </style>
 </head>
 <body data-theme="dark">
@@ -86,156 +89,153 @@
 <div class="container">
     <div class="header-top">
         <div class="logo">ORBICXS <span style="color:var(--accent)">FINANCE</span></div>
-        <div class="top-right">
+        <div class="top-ctrl">
             <span class="author">g'offorov.sh.z</span>
-            <button class="mode-btn" onclick="toggleMode()">MODE</button>
+            <button class="theme-btn" onclick="toggleTheme()">🌓 REJIM</button>
         </div>
     </div>
 
-    <div class="calc-panel">
-        <div class="calc-row">
+    <div class="calc-box">
+        <div class="calc-grid">
             <div>
-                <input type="number" id="valIn" value="1" oninput="doCalc()">
-                <select id="selectCur" style="margin-top:5px" onchange="doCalc()"></select>
+                <input type="number" id="amtIn" value="1" oninput="runCalc()">
+                <select id="curSelect" style="margin-top:8px" onchange="runCalc()"></select>
             </div>
             <div>
-                <input type="text" id="valOut" readonly>
-                <div style="font-size:10px; color:var(--sub); margin-top:5px; text-align:center;">MARKET PRICE (UZS)</div>
+                <input type="text" id="amtOut" readonly>
+                <div style="font-size:10px; color:var(--sub); margin-top:8px; text-align:center;">MARKET RATE (UZS)</div>
             </div>
         </div>
     </div>
 
     <div class="tabs">
-        <div class="tab active" id="fiat-tab" onclick="setTab('fiat')">VALYUTA (BOZOR)</div>
-        <div class="tab" id="crypto-tab" onclick="setTab('crypto')">KRIPTO (TON/BINANCE)</div>
+        <div class="tab-item active" id="fiat-tab" onclick="setMode('fiat')">BOZOR VALYUTALARI</div>
+        <div class="tab-item" id="crypto-tab" onclick="setMode('crypto')">KRIPTO (UZS)</div>
     </div>
 
-    <div class="card" id="list"></div>
+    <div class="list-card" id="dataList"></div>
 </div>
 
 <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 <script>
     let mode = 'fiat';
     let rates = {};
-    let usdPrice = 1;
+    let uzsUsd = 1;
+    let cbuData = [];
     let socket;
 
-    // Kripto ro'yxati (TON qo'shildi)
-    const cryptos = ["BTC", "ETH", "TON", "BNB", "SOL", "XRP", "DOGE", "TRX"];
+    // Kengaytirilgan Kripto (Ommabop barchasi)
+    const cryptoList = ["BTC", "ETH", "TON", "SOL", "BNB", "XRP", "ADA", "NOT", "PEPE", "DOGS", "TRX", "LTC", "DOT"];
 
-    async function loadData() {
+    async function init() {
         try {
-            // Markaziy bank va bozor kurslariga yaqin ma'lumotlar
             const res = await fetch('https://cbu.uz/uz/arkhiv-kursov-valyut/json/');
-            const data = await res.json();
+            cbuData = await res.json();
             
-            const select = document.getElementById('selectCur');
-            data.forEach(c => {
+            const sel = document.getElementById('curSelect');
+            cbuData.forEach(c => {
                 rates[c.Ccy] = parseFloat(c.Rate);
-                if(c.Ccy === 'USD') usdPrice = parseFloat(c.Rate);
+                if(c.Ccy === 'USD') uzsUsd = parseFloat(c.Rate);
                 
                 const opt = document.createElement('option');
-                opt.value = c.Ccy; opt.innerText = c.Ccy;
-                select.appendChild(opt);
+                opt.value = c.Ccy; opt.innerText = `${c.Ccy} - ${c.CcyNm_UZ}`;
+                sel.appendChild(opt);
             });
             render();
-            doCalc();
-        } catch (e) { console.log("Xatolik!"); }
+            runCalc();
+        } catch (e) { console.error("Network Error"); }
     }
 
     function render() {
-        const list = document.getElementById('list');
-        list.innerHTML = "";
+        const container = document.getElementById('dataList');
+        container.innerHTML = "";
         if(socket) socket.close();
 
         if(mode === 'fiat') {
-            Object.keys(rates).forEach(ccy => {
-                if(["USD","EUR","RUB","GBP","TRY","KZT"].includes(ccy)) {
-                    const flag = `https://flagcdn.com/w80/${ccy.substring(0,2).toLowerCase()}.png`;
-                    // Dollar-kursi saytidagi grafiklar TradingView dagi ushbu symbollarga mos:
-                    const tvSym = `FX_IDC:${ccy}UZS`;
-                    const name = ccy === "USD" ? "AQSH Dollari" : ccy;
-                    addItem(ccy, name, flag, rates[ccy].toLocaleString() + " UZS", tvSym, false);
-                }
+            cbuData.forEach(c => {
+                // Dollar-kursi sayti barcha valyutalarni ko'rsatadi
+                const flag = `https://flagcdn.com/w80/${c.Ccy === 'EUR' ? 'eu' : c.Ccy.substring(0,2).toLowerCase()}.png`;
+                const tvSym = `FX_IDC:${c.Ccy}UZS`;
+                buildRow(c.Ccy, c.CcyNm_UZ, flag, parseFloat(c.Rate).toLocaleString() + " UZS", tvSym, false);
             });
         } else {
-            cryptos.forEach(s => {
+            cryptoList.forEach(s => {
                 const icon = `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${s.toLowerCase()}.png`;
-                const tvSym = s === "TON" ? "OKX:TONUSDT" : `BINANCE:${s}USDT`;
-                addItem(s, "Live Crypto", icon, "Yuklanmoqda...", tvSym, true);
+                const tvSym = (s === "TON" || s === "NOT" || s === "DOGS") ? `OKX:${s}USDT` : `BINANCE:${s}USDT`;
+                buildRow(s, "Market Live", icon, "Updating...", tvSym, true);
             });
-            startWS();
+            connectWS();
         }
     }
 
-    function addItem(id, full, img, price, tv, isCrypto) {
+    function buildRow(id, full, img, price, tv, isCrypto) {
         const item = document.createElement('div');
         item.innerHTML = `
-            <div class="row" onclick="openChart(this, '${tv}')">
-                <div class="row-left">
-                    ${isCrypto ? `<img src="${img}" class="coin-icon">` : `<img src="${img}" class="flag">`}
-                    <div class="name-grp">
-                        <span class="ticker">${id}</span>
+            <div class="list-row" onclick="showChart(this, '${tv}')">
+                <div class="row-l">
+                    ${isCrypto ? `<img src="${img}" class="c-icon">` : `<div class="f-box"><img src="${img}" onerror="this.src='https://flagcdn.com/w80/un.png'"></div>`}
+                    <div class="name-info">
+                        <span class="sym-code">${id}</span>
                         <span class="full-name">${full}</span>
                     </div>
                 </div>
-                <div class="price-grp">
-                    <div class="price" id="p-${id}">${price}</div>
-                    <div class="tag">REAL-TIME DATA</div>
+                <div class="price-info">
+                    <div class="live-price" id="price-${id}">${price}</div>
+                    <div class="status-tag">LIVE MARKET DATA</div>
                 </div>
             </div>
-            <div class="chart-box" id="ch-${id}"></div>
+            <div class="chart-wrap" id="wrap-${id}"></div>
         `;
-        document.getElementById('list').appendChild(item);
+        document.getElementById('dataList').appendChild(item);
     }
 
-    function startWS() {
-        socket = new WebSocket(`wss://stream.binance.com:9443/ws/${cryptos.filter(s=>s!=="TON").map(s=>s.toLowerCase()+'usdt@ticker').join('/')}`);
+    function connectWS() {
+        const binanceList = cryptoList.filter(s => !["TON","NOT","DOGS"].includes(s));
+        socket = new WebSocket(`wss://stream.binance.com:9443/ws/${binanceList.map(s => s.toLowerCase()+'usdt@ticker').join('/')}`);
         socket.onmessage = (e) => {
             const d = JSON.parse(e.data);
             const sym = d.s.replace('USDT','');
-            const uzs = (parseFloat(d.c) * usdPrice).toLocaleString(undefined, {maximumFractionDigits:0});
-            const el = document.getElementById('p-' + sym);
-            if(el) el.innerText = uzs + " UZS";
+            const uzsPrice = (parseFloat(d.c) * uzsUsd).toLocaleString(undefined, {maximumFractionDigits:0});
+            const el = document.getElementById('price-' + sym);
+            if(el) el.innerText = uzsPrice + " UZS";
         };
     }
 
-    function openChart(el, sym) {
+    function showChart(el, sym) {
         const box = el.nextElementSibling;
-        const isOpen = box.classList.contains('active');
-        document.querySelectorAll('.chart-box').forEach(b => { b.classList.remove('active'); b.innerHTML = ""; });
+        const active = box.classList.contains('active');
+        document.querySelectorAll('.chart-wrap').forEach(b => { b.classList.remove('active'); b.innerHTML = ""; });
         
-        if(!isOpen) {
+        if(!active) {
             box.classList.add('active');
             const theme = document.body.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
             new TradingView.widget({
-                "autosize": true, "symbol": sym, "interval": "D", "theme": theme,
-                "style": "3", "container_id": box.id, "hide_top_toolbar": true, "hide_legend": true
+                "autosize": true, "symbol": sym, "interval": "H", "theme": theme,
+                "style": "3", "container_id": box.id, "hide_top_toolbar": true, "hide_legend": true, "save_image": false
             });
         }
     }
 
-    function doCalc() {
-        const amt = document.getElementById('valIn').value;
-        const from = document.getElementById('selectCur').value;
-        document.getElementById('valOut').value = (amt * (rates[from]||0)).toLocaleString() + " UZS";
+    function runCalc() {
+        const val = document.getElementById('amtIn').value;
+        const cur = document.getElementById('curSelect').value;
+        document.getElementById('amtOut').value = (val * (rates[cur]||0)).toLocaleString() + " UZS";
     }
 
-    function setTab(t) {
-        mode = t;
-        document.getElementById('fiat-tab').classList.toggle('active', t==='fiat');
-        document.getElementById('crypto-tab').classList.toggle('active', t==='crypto');
+    function setMode(m) {
+        mode = m;
+        document.getElementById('fiat-tab').classList.toggle('active', m==='fiat');
+        document.getElementById('crypto-tab').classList.toggle('active', m==='crypto');
         render();
     }
 
-    function toggleMode() {
+    function toggleTheme() {
         const b = document.body;
-        const next = b.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        b.setAttribute('data-theme', next);
+        b.setAttribute('data-theme', b.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
         render();
     }
 
-    loadData();
+    init();
 </script>
 </body>
 </html>
