@@ -3,159 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orbicxs | Finance</title>
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>Orbicxs | NBU & Binance Live</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #ffffff; --text: #202124; --border: #dadce0; 
-            --up: #137333; --down: #c5221f; --up-bg: #e6f4ea; --down-bg: #fce8e6;
+            --up: #137333; --down: #c5221f; --accent: #1a73e8;
         }
-        /* Tungi rejim (ixtiyoriy) */
         @media (prefers-color-scheme: dark) {
-            :root { --bg: #202124; --text: #e8eaed; --border: #3c4043; }
+            :root { --bg: #171717; --text: #e8eaed; --border: #3c4043; }
         }
 
-        body {
-            background-color: var(--bg); color: var(--text);
-            font-family: 'Google Sans', Arial, sans-serif; margin: 0; padding: 20px;
-        }
+        body { background-color: var(--bg); color: var(--text); font-family: 'Google Sans', sans-serif; margin: 0; padding: 15px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
+        .header h1 { font-size: 20px; margin: 0; letter-spacing: 1px; }
+        .live-indicator { font-size: 11px; color: var(--up); display: flex; align-items: center; gap: 5px; }
+        .dot { height: 8px; width: 8px; background: var(--up); border-radius: 50%; animation: pulse 1.5s infinite; }
 
-        .container { max-width: 1000px; margin: 0 auto; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 12px; border: 1px solid var(--border); background: none; color: var(--text); border-radius: 8px; cursor: pointer; font-weight: 500; }
+        .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
 
-        /* Google Style Header */
-        .header { display: flex; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; }
-        .header h1 { font-size: 22px; margin: 0; font-weight: 400; }
-        .header span { font-weight: 700; color: #4285f4; }
+        .list { border-top: 1px solid var(--border); }
+        .item { border-bottom: 1px solid var(--border); cursor: pointer; transition: 0.2s; }
+        .item:hover { background: rgba(0,0,0,0.02); }
 
-        /* Search */
-        .search-bar { margin-bottom: 30px; }
-        #searchInput {
-            width: 100%; padding: 12px 20px; border-radius: 24px;
-            border: 1px solid var(--border); background: transparent; color: var(--text);
-            font-size: 16px; outline: none;
-        }
+        .item-main { display: flex; justify-content: space-between; padding: 16px 10px; align-items: center; }
+        .info { display: flex; align-items: center; gap: 12px; }
+        .symbol { font-weight: 700; width: 60px; font-family: 'JetBrains Mono', monospace; }
+        .name { color: #70757a; font-size: 13px; }
 
-        /* Asset Table */
-        .market-list { border-top: 1px solid var(--border); }
-        .asset-row {
-            border-bottom: 1px solid var(--border); cursor: pointer;
-            transition: background 0.2s; overflow: hidden;
-        }
-        .asset-row:hover { background: rgba(0,0,0,0.02); }
+        .price-area { text-align: right; }
+        .price-uzs { font-weight: 700; font-size: 16px; font-family: 'JetBrains Mono', monospace; }
+        .price-change { font-size: 12px; margin-top: 4px; }
 
-        .asset-main { display: flex; justify-content: space-between; align-items: center; padding: 16px 8px; }
-        .asset-info { display: flex; align-items: center; gap: 15px; }
-        .asset-symbol { font-weight: 500; font-size: 16px; width: 80px; }
-        .asset-name { color: #70757a; font-size: 13px; }
-
-        .asset-price-area { text-align: right; }
-        .price-uzs { font-weight: 500; font-size: 16px; }
-        .price-change { 
-            display: inline-block; padding: 2px 8px; border-radius: 4px; 
-            font-size: 12px; font-weight: 500; margin-top: 4px;
-        }
-
-        /* Chart Area (Accordion) */
-        .chart-drawer {
-            max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out;
-            background: rgba(0,0,0,0.01);
-        }
-        .chart-drawer.active { max-height: 300px; padding-bottom: 15px; }
+        .chart-box { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; background: rgba(0,0,0,0.01); }
+        .chart-box.active { max-height: 300px; border-bottom: 1px solid var(--border); }
         .inner-chart { height: 250px; width: 100%; }
 
-        .up { color: var(--up); }
-        .down { color: var(--down); }
-        .bg-up { background: var(--up-bg); color: var(--up); }
-        .bg-down { background: var(--down-bg); color: var(--down); }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <h1>Orbicxs <span>Finance</span></h1>
+        <h1>ORBICXS <b>FINANCE</b></h1>
+        <div class="live-indicator"><div class="dot"></div> NBU & BINANCE LIVE</div>
     </div>
 
-    <div class="search-bar">
-        <input type="text" id="searchInput" placeholder="Bozorlarni qidirish..." onkeyup="filterList()">
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('fiat', this)">NBU VALYUTA</button>
+        <button class="tab-btn" onclick="switchTab('crypto', this)">BINANCE KRIPTO</button>
     </div>
 
-    <div id="marketList" class="market-list">
-        </div>
+    <div id="mainList" class="list"></div>
 </div>
 
 <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 <script>
-    const assets = [
-        {id: "BTC", name: "Bitcoin", sym: "BINANCE:BTCUSDT", type: "crypto"},
-        {id: "USD", name: "AQSH Dollari", sym: "FX_IDC:USDUZS", type: "fiat"},
-        {id: "EUR", name: "Yevro", sym: "FX_IDC:EURUZS", type: "fiat"},
-        {id: "RUB", name: "Rossiya Rubli", sym: "FX_IDC:RUBUZS", type: "fiat"},
-        {id: "ETH", name: "Ethereum", sym: "BINANCE:ETHUSDT", type: "crypto"},
-        {id: "GOLD", name: "Oltin", sym: "TVC:GOLD", type: "fiat"}
-    ];
+    let currentMode = 'fiat';
+    let usdToUzs = 0; // NBU dan olinadigan dollar kursi
 
-    async function loadPrices() {
-        const res = await fetch('https://open.er-api.com/v6/latest/USD');
-        const data = await res.json();
-        const uzsRate = data.rates.UZS;
+    // 1. NBU dan Valyuta kurslarini olish
+    async function getNbuRates() {
+        try {
+            const res = await fetch('https://nbu.uz/uz/exchange-rates/json/');
+            const data = await res.json();
+            
+            // Dollarni so'mdagi qiymatini saqlab qo'yamiz (kripto uchun)
+            const usdData = data.find(c => c.code === 'USD');
+            usdToUzs = parseFloat(usdData.cb_price);
 
-        const container = document.getElementById('marketList');
+            if (currentMode === 'fiat') renderFiat(data);
+        } catch (e) { console.error("NBU ma'lumot olishda xatolik"); }
+    }
+
+    // 2. Binance dan Kripto kurslarini olish
+    async function getCrypto() {
+        const symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT', 'ADAUSDT', 'AVAXUSDT', 'DOGEUSDT'];
+        if (currentMode === 'crypto') {
+            const container = document.getElementById('mainList');
+            container.innerHTML = "";
+            symbols.forEach(s => {
+                renderItem(s.replace('USDT', ''), "Kripto aktiv", "Yuklanmoqda...", "BINANCE:"+s);
+            });
+            connectCryptoWS(symbols);
+        }
+    }
+
+    function connectCryptoWS(symbols) {
+        const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbols.map(s => s.toLowerCase() + '@ticker').join('/')}`);
+        ws.onmessage = (event) => {
+            if (currentMode !== 'crypto') { ws.close(); return; }
+            const data = JSON.parse(event.data);
+            const symbol = data.s.replace('USDT', '');
+            const priceUZS = (parseFloat(data.c) * usdToUzs).toLocaleString(undefined, {minimumFractionDigits: 0});
+            
+            const el = document.getElementById('price-' + symbol);
+            if (el) el.innerText = priceUZS + " UZS";
+            const chgEl = document.getElementById('chg-' + symbol);
+            if (chgEl) {
+                chgEl.innerText = data.P + "%";
+                chgEl.style.color = parseFloat(data.P) >= 0 ? 'var(--up)' : 'var(--down)';
+            }
+        };
+    }
+
+    function renderFiat(data) {
+        const container = document.getElementById('mainList');
         container.innerHTML = "";
-
-        assets.forEach(asset => {
-            const row = document.createElement('div');
-            row.className = 'asset-row';
-            
-            // So'mga aylantirish (Simulyatsiya yoki API ulanishi)
-            let priceText = asset.type === "fiat" ? (uzsRate / (data.rates[asset.id] || 1)).toFixed(2) : "Live Data";
-            
-            row.innerHTML = `
-                <div class="asset-main" onclick="toggleChart(this, '${asset.sym}')">
-                    <div class="asset-info">
-                        <div class="asset-symbol">${asset.id}</div>
-                        <div class="asset-name">${asset.name}</div>
-                    </div>
-                    <div class="asset-price-area">
-                        <div class="price-uzs">${priceText} UZS</div>
-                        <div class="price-change bg-up">+0.24%</div>
-                    </div>
-                </div>
-                <div class="chart-drawer">
-                    <div class="inner-chart" id="chart_${asset.id}"></div>
-                </div>
-            `;
-            container.appendChild(row);
+        // Faqat tanlangan asosiy valyutalar
+        const main = ['USD', 'EUR', 'RUB', 'GBP', 'JPY', 'KZT', 'TRY'];
+        data.forEach(c => {
+            if (main.includes(c.code)) {
+                renderItem(c.code, c.title, parseFloat(c.cb_price).toLocaleString() + " UZS", "FX_IDC:USD" + c.code);
+            }
         });
     }
 
-    function toggleChart(el, symbol) {
-        const drawer = el.nextElementSibling;
-        const isActive = drawer.classList.contains('active');
-        
-        // Barchasini yopish
-        document.querySelectorAll('.chart-drawer').forEach(d => d.classList.remove('active'));
+    function renderItem(id, name, price, tvSymbol) {
+        const container = document.getElementById('mainList');
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.innerHTML = `
+            <div class="item-main" onclick="toggleChart(this, '${tvSymbol}')">
+                <div class="info">
+                    <div class="symbol">${id}</div>
+                    <div class="name">${name}</div>
+                </div>
+                <div class="price-area">
+                    <div class="price-uzs" id="price-${id}">${price}</div>
+                    <div class="price-change" id="chg-${id}">NBU kursi</div>
+                </div>
+            </div>
+            <div class="chart-box">
+                <div class="inner-chart" id="chart-${id}"></div>
+            </div>
+        `;
+        container.appendChild(div);
+    }
 
+    function toggleChart(el, symbol) {
+        const box = el.nextElementSibling;
+        const isActive = box.classList.contains('active');
+        document.querySelectorAll('.chart-box').forEach(b => b.classList.remove('active'));
         if (!isActive) {
-            drawer.classList.add('active');
-            const chartId = drawer.querySelector('.inner-chart').id;
-            
+            box.classList.add('active');
+            const chartId = box.querySelector('.inner-chart').id;
             new TradingView.widget({
-                "autosize": true,
-                "symbol": symbol,
-                "interval": "D",
-                "timezone": "Etc/UTC",
-                "theme": "light", // Google Finance oq bo'lgani uchun
-                "style": "3", // Chiziqli grafik
-                "locale": "uz",
-                "hide_top_toolbar": true,
-                "hide_legend": true,
-                "container_id": chartId
+                "autosize": true, "symbol": symbol, "interval": "D", "theme": "light",
+                "style": "3", "locale": "uz", "hide_top_toolbar": true, "container_id": chartId
             });
         }
     }
 
-    loadPrices();
+    function switchTab(mode, btn) {
+        currentMode = mode;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        mode === 'fiat' ? getNbuRates() : getCrypto();
+    }
+
+    // Boshlang'ich yuklash
+    getNbuRates();
+    setInterval(getNbuRates, 300000); // NBU har 5 daqiqada yangilanadi
 </script>
 </body>
 </html>
