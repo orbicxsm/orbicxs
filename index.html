@@ -2,72 +2,40 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orbicxs Search</title>
+    <title>Orbicxs | Global Market</title>
     <style>
-        body {
-            margin: 0; padding: 0;
-            background-color: #202124;
-            color: #e8eaed;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            display: flex; flex-direction: column; height: 100vh;
-        }
-        .header { display: flex; justify-content: flex-end; padding: 15px; font-size: 13px; }
-        .header a { color: white; text-decoration: none; margin-left: 15px; opacity: 0.8; }
-        .header a:hover { text-decoration: underline; }
-        
-        .main { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        
-        /* Orbicxs Logo Style */
-        .logo { font-size: 85px; font-weight: bold; margin-bottom: 30px; cursor: default; user-select: none; }
-        .o1 { color: #4285F4; } .r { color: #EA4335; } .b { color: #FBBC05; }
-        .i { color: #4285F4; } .c { color: #34A853; } .x { color: #EA4335; } .s { color: #FBBC05; }
-
-        .search-container { width: 100%; max-width: 584px; position: relative; }
-        .search-bar {
-            width: 100%; background: #303134; border: 1px solid #5f6368;
-            border-radius: 24px; padding: 12px 20px; box-sizing: border-box;
-            color: white; font-size: 16px; outline: none; transition: box-shadow 0.2s;
-        }
-        .search-bar:hover, .search-bar:focus {
-            background-color: #3c4043; box-shadow: 0 1px 6px rgba(32,33,36,0.28); border-color: rgba(223,225,229,0);
-        }
-        
-        .buttons { margin-top: 25px; }
-        .btn {
-            background-color: #303134; border: 1px solid #303134; border-radius: 4px;
-            color: #e8eaed; font-size: 14px; margin: 5px; padding: 10px 20px;
-            cursor: pointer; transition: border 0.2s;
-        }
-        .btn:hover { border: 1px solid #9aa0a6; color: #fff; }
-        
-        .footer { background: #171717; padding: 15px; font-size: 14px; color: #9aa0a6; border-top: 1px solid #3c4043; }
+        body { background: #0a0e17; color: white; font-family: 'Arial', sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .market-card { background: #161b22; border: 1px solid #30363d; border-radius: 16px; padding: 30px; width: 350px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .logo { font-size: 24px; font-weight: bold; color: #58a6ff; text-align: center; margin-bottom: 20px; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+        .currency-row { display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #21262d; }
+        .symbol { font-weight: bold; color: #8b949e; }
+        .price { color: #39d353; font-family: 'Courier New', monospace; font-size: 18px; }
+        .change-up { color: #39d353; font-size: 12px; }
+        .change-down { color: #f85149; font-size: 12px; }
+        .footer { font-size: 10px; color: #484f58; text-align: center; margin-top: 20px; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <a href="#">Gmail</a>
-        <a href="#">Rasmlar</a>
-        <a href="#" style="background: #8ab4f8; color: #202124; padding: 7px 15px; border-radius: 4px; font-weight: bold;">Kirish</a>
-    </div>
-
-    <div class="main">
-        <div class="logo">
-            <span class="o1">O</span><span class="r">r</span><span class="b">b</span><span class="i">i</span><span class="c">c</span><span class="x">x</span><span class="s">s</span>
+    <div class="market-card">
+        <div class="logo">ORBICXS MARKET</div>
+        
+        <div class="currency-row">
+            <span class="symbol">USD / UZS</span>
+            <div style="text-align: right;">
+                <div class="price" id="usd-rate">12,650.00</div>
+                <span class="change-up" id="usd-diff">+15.00 ▲</span>
+            </div>
         </div>
-        <div class="search-container">
-            <form action="https://www.google.com/search" method="GET">
-                <input type="text" name="q" class="search-bar" placeholder="Orbicxs orqali qidiring..." autofocus>
-                <div class="buttons">
-                    <button type="submit" class="btn">Orbicxs Qidiruvi</button>
-                    <button type="button" class="btn" onclick="location.href='https://orbicxs.com'">Omadingizni sinang</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
-    <div class="footer">
-        O'zbekiston | Orbicxs © 2026
+        <div class="currency-row">
+            <span class="symbol">EUR / UZS</span>
+            <div style="text-align: right;">
+                <div class="price" id="eur-rate">13,720.00</div>
+                <span class="change-down" id="eur-diff">-5.40 ▼</span>
+            </div>
+        </div>
+
+        <div class="footer">MA'LUMOTLAR REAL VAQTDA YANGILANMOQDA</div>
     </div>
 </body>
 </html>
