@@ -3,194 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orbicxs | Smart Exchange</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <title>Orbicxs | Finance</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #0a0a0a; --card: #141414; --accent: #00d1ff;
-            --text: #ffffff; --border: #222; --up: #00ff88;
+            --bg: #ffffff; --text: #202124; --border: #dadce0; 
+            --up: #137333; --down: #c5221f; --up-bg: #e6f4ea; --down-bg: #fce8e6;
+        }
+        /* Tungi rejim (ixtiyoriy) */
+        @media (prefers-color-scheme: dark) {
+            :root { --bg: #202124; --text: #e8eaed; --border: #3c4043; }
         }
 
         body {
             background-color: var(--bg); color: var(--text);
-            font-family: 'Inter', sans-serif; margin: 0; padding: 10px;
-            display: flex; flex-direction: column; align-items: center;
+            font-family: 'Google Sans', Arial, sans-serif; margin: 0; padding: 20px;
         }
 
-        .container { width: 100%; max-width: 800px; }
-        
-        .header { text-align: center; padding: 20px 0; }
-        .header h1 { font-weight: 800; letter-spacing: 4px; color: var(--accent); margin: 0; font-size: 28px; }
+        .container { max-width: 1000px; margin: 0 auto; }
 
-        .search-area { position: sticky; top: 10px; z-index: 100; margin-bottom: 20px; }
+        /* Google Style Header */
+        .header { display: flex; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; }
+        .header h1 { font-size: 22px; margin: 0; font-weight: 400; }
+        .header span { font-weight: 700; color: #4285f4; }
+
+        /* Search */
+        .search-bar { margin-bottom: 30px; }
         #searchInput {
-            width: 100%; padding: 16px; background: rgba(20, 20, 20, 0.9);
-            border: 1px solid var(--border); border-radius: 15px;
-            color: #fff; font-size: 16px; backdrop-filter: blur(10px);
+            width: 100%; padding: 12px 20px; border-radius: 24px;
+            border: 1px solid var(--border); background: transparent; color: var(--text);
+            font-size: 16px; outline: none;
         }
 
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab-btn {
-            flex: 1; padding: 12px; border: 1px solid var(--border);
-            background: var(--card); color: #888; border-radius: 10px;
-            cursor: pointer; font-weight: bold; transition: 0.3s;
+        /* Asset Table */
+        .market-list { border-top: 1px solid var(--border); }
+        .asset-row {
+            border-bottom: 1px solid var(--border); cursor: pointer;
+            transition: background 0.2s; overflow: hidden;
         }
-        .tab-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+        .asset-row:hover { background: rgba(0,0,0,0.02); }
 
-        /* LIST */
-        .asset-item {
-            background: var(--card); border: 1px solid var(--border);
-            border-radius: 15px; margin-bottom: 10px; overflow: hidden;
-            transition: 0.3s;
+        .asset-main { display: flex; justify-content: space-between; align-items: center; padding: 16px 8px; }
+        .asset-info { display: flex; align-items: center; gap: 15px; }
+        .asset-symbol { font-weight: 500; font-size: 16px; width: 80px; }
+        .asset-name { color: #70757a; font-size: 13px; }
+
+        .asset-price-area { text-align: right; }
+        .price-uzs { font-weight: 500; font-size: 16px; }
+        .price-change { 
+            display: inline-block; padding: 2px 8px; border-radius: 4px; 
+            font-size: 12px; font-weight: 500; margin-top: 4px;
         }
-        .asset-header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 15px 20px; cursor: pointer;
+
+        /* Chart Area (Accordion) */
+        .chart-drawer {
+            max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out;
+            background: rgba(0,0,0,0.01);
         }
-        .asset-header:hover { background: #1c1c1c; }
+        .chart-drawer.active { max-height: 300px; padding-bottom: 15px; }
+        .inner-chart { height: 250px; width: 100%; }
 
-        .info { display: flex; align-items: center; gap: 15px; }
-        .flag { font-size: 24px; width: 30px; text-align: center; }
-        .name-box { display: flex; flex-direction: column; }
-        .sym { font-weight: bold; font-size: 16px; }
-        .full { font-size: 11px; color: #666; text-transform: uppercase; }
-
-        .price-box { text-align: right; }
-        .uzs-price { color: var(--up); font-weight: bold; font-size: 15px; }
-        .usd-sub { font-size: 11px; color: #555; margin-top: 2px; }
-
-        /* GRAFIK OYNASI */
-        .chart-container {
-            height: 0; overflow: hidden; transition: height 0.4s ease;
-            background: #000; border-top: 1px solid #1a1a1a;
-        }
-        .chart-container.active { height: 250px; }
-        
-        iframe { width: 100%; height: 100%; border: none; }
-
+        .up { color: var(--up); }
+        .down { color: var(--down); }
+        .bg-up { background: var(--up-bg); color: var(--up); }
+        .bg-down { background: var(--down-bg); color: var(--down); }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="header"><h1>ORBICXS</h1></div>
-
-        <div class="search-area">
-            <input type="text" id="searchInput" placeholder="Valyuta yoki Kriptoni qidiring..." onkeyup="filterAssets()">
-        </div>
-
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('fiat', this)">VALYUTA</button>
-            <button class="tab-btn" onclick="switchTab('crypto', this)">KRIPTO</button>
-        </div>
-
-        <div id="main-list">
-            </div>
+<div class="container">
+    <div class="header">
+        <h1>Orbicxs <span>Finance</span></h1>
     </div>
 
-    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-    <script>
-        let currentMode = 'fiat';
-        let uzsBase = 0;
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Bozorlarni qidirish..." onkeyup="filterList()">
+    </div>
 
-        const mainFiats = ["USD","EUR","RUB","GBP","JPY","TRY","CNY","AED","CHF","CAD","AUD","KZT","KRW","SAR","INR","MYR"];
-        const mainCryptos = ["BTC","ETH","BNB","SOL","XRP","ADA","AVAX","DOGE","DOT","TRX","LINK","MATIC","LTC","SHIB","UNI","BCH"];
+    <div id="marketList" class="market-list">
+        </div>
+</div>
 
-        // Bayroqlar bazasi
-        const flags = {"USD":"🇺🇸","EUR":"🇪🇺","RUB":"🇷🇺","GBP":"🇬🇧","JPY":"🇯🇵","TRY":"🇹🇷","CNY":"🇨🇳","AED":"🇦🇪","CHF":"🇨🇭","CAD":"🇨🇦","AUD":"🇦🇺","KZT":"🇰🇿","KRW":"🇰🇷","SAR":"🇸🇦","INR":"🇮🇳","MYR":"🇲🇾","BTC":"₿","ETH":"Ξ","BNB":"🔶","SOL":"☀️","XRP":"✕"};
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<script>
+    const assets = [
+        {id: "BTC", name: "Bitcoin", sym: "BINANCE:BTCUSDT", type: "crypto"},
+        {id: "USD", name: "AQSH Dollari", sym: "FX_IDC:USDUZS", type: "fiat"},
+        {id: "EUR", name: "Yevro", sym: "FX_IDC:EURUZS", type: "fiat"},
+        {id: "RUB", name: "Rossiya Rubli", sym: "FX_IDC:RUBUZS", type: "fiat"},
+        {id: "ETH", name: "Ethereum", sym: "BINANCE:ETHUSDT", type: "crypto"},
+        {id: "GOLD", name: "Oltin", sym: "TVC:GOLD", type: "fiat"}
+    ];
 
-        async function initData() {
-            const res = await fetch('https://open.er-api.com/v6/latest/USD');
-            const data = await res.json();
-            uzsBase = data.rates.UZS;
-            renderList(data.rates);
-        }
+    async function loadPrices() {
+        const res = await fetch('https://open.er-api.com/v6/latest/USD');
+        const data = await res.json();
+        const uzsRate = data.rates.UZS;
 
-        function switchTab(mode, btn) {
-            currentMode = mode;
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            initData();
-        }
+        const container = document.getElementById('marketList');
+        container.innerHTML = "";
 
-        function renderList(rates) {
-            const container = document.getElementById('main-list');
-            container.innerHTML = "";
+        assets.forEach(asset => {
+            const row = document.createElement('div');
+            row.className = 'asset-row';
             
-            const list = (currentMode === 'fiat') ? Object.keys(rates) : mainCryptos;
-
-            list.forEach(id => {
-                const isMain = (currentMode === 'fiat' ? mainFiats.includes(id) : true);
-                const flag = flags[id] || (currentMode === 'fiat' ? "🏳️" : "🪙");
-                
-                let priceInUZS, priceInUSD;
-                
-                if(currentMode === 'fiat') {
-                    priceInUSD = (1 / rates[id]).toFixed(4);
-                    priceInUZS = (uzsBase / rates[id]).toFixed(2);
-                } else {
-                    priceInUZS = "Loading...";
-                    priceInUSD = "Check Chart";
-                }
-
-                const item = document.createElement('div');
-                item.className = 'asset-item';
-                item.innerHTML = `
-                    <div class="asset-header" onclick="toggleChart(this, '${id}')">
-                        <div class="info">
-                            <div class="flag">${flag}</div>
-                            <div class="name-box">
-                                <span class="sym">${id}</span>
-                                <span class="full">${currentMode}</span>
-                            </div>
-                        </div>
-                        <div class="price-box">
-                            <div class="uzs-price">${priceInUZS} UZS</div>
-                            <div class="usd-sub">${currentMode === 'fiat' ? '1 ' + id : 'Crypto Asset'}</div>
-                        </div>
+            // So'mga aylantirish (Simulyatsiya yoki API ulanishi)
+            let priceText = asset.type === "fiat" ? (uzsRate / (data.rates[asset.id] || 1)).toFixed(2) : "Live Data";
+            
+            row.innerHTML = `
+                <div class="asset-main" onclick="toggleChart(this, '${asset.sym}')">
+                    <div class="asset-info">
+                        <div class="asset-symbol">${asset.id}</div>
+                        <div class="asset-name">${asset.name}</div>
                     </div>
-                    <div class="chart-container" id="chart-${id}"></div>
-                `;
-                container.appendChild(item);
+                    <div class="asset-price-area">
+                        <div class="price-uzs">${priceText} UZS</div>
+                        <div class="price-change bg-up">+0.24%</div>
+                    </div>
+                </div>
+                <div class="chart-drawer">
+                    <div class="inner-chart" id="chart_${asset.id}"></div>
+                </div>
+            `;
+            container.appendChild(row);
+        });
+    }
+
+    function toggleChart(el, symbol) {
+        const drawer = el.nextElementSibling;
+        const isActive = drawer.classList.contains('active');
+        
+        // Barchasini yopish
+        document.querySelectorAll('.chart-drawer').forEach(d => d.classList.remove('active'));
+
+        if (!isActive) {
+            drawer.classList.add('active');
+            const chartId = drawer.querySelector('.inner-chart').id;
+            
+            new TradingView.widget({
+                "autosize": true,
+                "symbol": symbol,
+                "interval": "D",
+                "timezone": "Etc/UTC",
+                "theme": "light", // Google Finance oq bo'lgani uchun
+                "style": "3", // Chiziqli grafik
+                "locale": "uz",
+                "hide_top_toolbar": true,
+                "hide_legend": true,
+                "container_id": chartId
             });
         }
+    }
 
-        function toggleChart(el, id) {
-            const container = el.parentElement.querySelector('.chart-container');
-            const isActive = container.classList.contains('active');
-            
-            // Boshqa barcha ochiq grafiklatni yopish
-            document.querySelectorAll('.chart-container').forEach(c => c.classList.remove('active'));
-            
-            if(!isActive) {
-                container.classList.add('active');
-                const symbol = (currentMode === 'crypto') ? `BINANCE:${id}USDT` : `FX_IDC:USD${id}`;
-                
-                new TradingView.widget({
-                    "autosize": true,
-                    "symbol": symbol,
-                    "interval": "D",
-                    "theme": "dark",
-                    "style": "3", // Area chart - kichikroq joy uchun chiroyli
-                    "locale": "uz",
-                    "container_id": `chart-${id}`,
-                    "hide_top_toolbar": true,
-                    "hide_legend": true,
-                    "save_image": false
-                });
-            }
-        }
-
-        function filterAssets() {
-            const q = document.getElementById('searchInput').value.toUpperCase();
-            document.querySelectorAll('.asset-item').forEach(item => {
-                const text = item.innerText.toUpperCase();
-                item.style.display = text.includes(q) ? 'block' : 'none';
-            });
-        }
-
-        initData();
-        setInterval(initData, 60000);
-    </script>
+    loadPrices();
+</script>
 </body>
 </html>
