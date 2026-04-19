@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orbicxs | Pro Terminal</title>
+    <title>Orbicxs | Smart Terminal</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #050505; --card: #111; --border: #222;
-            --text: #fff; --sub: #888; --up: #00ff88; --accent: #007aff;
+            --bg: #050505; --card: #111111; --border: #222222;
+            --text: #ffffff; --sub: #888888; --up: #00ff88; --accent: #007aff;
         }
 
         body {
             background-color: var(--bg); color: var(--text);
-            font-family: 'Inter', sans-serif; margin: 0; padding: 10px;
-            padding-bottom: 80px; /* Muallif yozuvi uchun joy */
+            font-family: 'Inter', sans-serif; margin: 0; padding: 15px;
+            padding-bottom: 100px;
         }
 
-        .container { max-width: 650px; margin: 0 auto; }
+        .container { max-width: 600px; margin: 0 auto; }
 
         /* Kalkulyator */
         .calc-box {
@@ -31,7 +31,7 @@
         }
 
         /* Tabs */
-        .tabs { display: flex; gap: 5px; background: var(--card); border-radius: 12px; padding: 5px; margin-bottom: 10px; border: 1px solid var(--border); }
+        .tabs { display: flex; gap: 5px; background: var(--card); border-radius: 12px; padding: 5px; margin-bottom: 15px; border: 1px solid var(--border); }
         .tab-btn { flex: 1; padding: 12px; border: none; background: none; color: var(--sub); border-radius: 8px; cursor: pointer; font-weight: 600; }
         .tab-btn.active { background: var(--accent); color: white; }
 
@@ -40,28 +40,30 @@
         .item-main { display: flex; justify-content: space-between; align-items: center; padding: 15px; cursor: pointer; }
         
         .left { display: flex; align-items: center; gap: 15px; }
-        .flag-box { width: 32px; height: 22px; border-radius: 3px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .flag-box { width: 32px; height: 22px; border-radius: 3px; overflow: hidden; }
         .flag-box img { width: 100%; height: 100%; object-fit: cover; }
         
         .sym { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 15px; }
         .price-val { font-family: 'JetBrains Mono', monospace; color: var(--up); font-weight: 700; text-align: right; }
 
         /* Chart */
-        .chart-container { height: 0; transition: height 0.4s ease; background: #000; }
-        .chart-container.active { height: 300px; border-top: 1px solid var(--border); }
+        .chart-container { height: 0; transition: height 0.3s ease-out; background: #000; }
+        .chart-container.active { height: 320px; border-top: 1px solid var(--border); }
 
-        /* Muallif yozuvi - Eng tepaga chiqardim */
+        /* MUALLIF YOZUVI (Fixed) */
         .author-tag { 
             position: fixed; bottom: 20px; right: 20px; 
-            font-size: 14px; color: var(--sub); font-weight: 700; 
-            z-index: 9999; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 5px;
+            font-size: 14px; color: #ffffff; font-weight: 800; 
+            z-index: 99999; background: #007aff; padding: 8px 15px; 
+            border-radius: 30px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            pointer-events: none; text-transform: lowercase;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 style="text-align: center; letter-spacing: 3px; font-size: 18px; margin-bottom: 20px;">ORBICXS TERMINAL</h2>
+    <h2 style="text-align: center; letter-spacing: 2px; font-size: 18px; margin-bottom: 20px;">ORBICXS FINANCE</h2>
 
     <div class="calc-box">
         <div class="calc-grid">
@@ -70,7 +72,7 @@
                 <select id="selectFrom" style="margin-top:8px;" onchange="convert()"></select>
             </div>
             <div class="calc-group">
-                <input type="text" id="outputAmt" readonly>
+                <input type="text" id="outputAmt" readonly placeholder="Hisoblanmoqda...">
                 <div style="font-size:10px; color:var(--sub); margin-top:8px; text-align:center;">O'ZBEK SO'MI (UZS)</div>
             </div>
         </div>
@@ -83,19 +85,19 @@
 
     <div id="mainList"></div>
 
-    <div class="author-tag">G'OFFOROV.SH.Z</div>
+    <div class="author-tag">g'offorov.sh.z</div>
 </div>
 
 <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 <script>
     let mode = 'fiat';
-    let usdToUzs = 0;
+    let usdToUzs = 12850; // Standart qiymat
     let allRates = {};
     let cbuData = [];
     let socket;
 
-    // Kripto ro'yxati
-    const cryptos = ["BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "DOGE"];
+    // Kengaytirilgan Kripto ro'yxati (TON qo'shildi)
+    const cryptos = ["BTC", "ETH", "TON", "BNB", "SOL", "XRP", "ADA", "DOGE", "DOT", "LINK", "LTC"];
 
     async function init() {
         try {
@@ -113,7 +115,7 @@
             });
             render();
             convert();
-        } catch (e) { console.error("Data error"); }
+        } catch (e) { console.error("API error"); }
     }
 
     function render() {
@@ -123,23 +125,23 @@
 
         if (mode === 'fiat') {
             cbuData.forEach(c => {
-                // Bayroqlar kodi tuzatildi
                 const flagCode = c.Ccy === 'EUR' ? 'eu' : c.Ccy.substring(0,2).toLowerCase();
                 const flag = `https://flagcdn.com/w80/${flagCode}.png`;
-                // Grafik uchun symbol FX:USDUZS kabi formatga o'tkazildi
-                const tvSym = `FX:${c.Ccy}UZS`;
+                // Grafik uchun: Agar juftlik bo'lmasa, universal USD formatga o'tadi
+                const tvSym = (c.Ccy === 'USD' || c.Ccy === 'EUR' || c.Ccy === 'RUB') ? `FX_IDC:${c.Ccy}UZS` : `FX_IDC:USD${c.Ccy}`;
                 createItem(c.Ccy, c.CcyNm_UZ, flag, parseFloat(c.Rate).toLocaleString() + " UZS", tvSym);
             });
         } else {
             cryptos.forEach(s => {
                 const icon = `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${s.toLowerCase()}.png`;
-                createItem(s, "Binance Live", icon, "Yuklanmoqda...", `BINANCE:${s}USDT`, s);
+                const tvSym = s === "TON" ? "OKX:TONUSDT" : `BINANCE:${s}USDT`;
+                createItem(s, "Live Market", icon, "Yuklanmoqda...", tvSym);
             });
             startCryptoLive();
         }
     }
 
-    function createItem(sym, name, img, price, tv, id) {
+    function createItem(sym, name, img, price, tv) {
         const wrapper = document.createElement('div');
         wrapper.className = 'item-wrapper';
         wrapper.innerHTML = `
@@ -159,7 +161,7 @@
     }
 
     function startCryptoLive() {
-        socket = new WebSocket(`wss://stream.binance.com:9443/ws/${cryptos.map(s => s.toLowerCase() + 'usdt@ticker').join('/')}`);
+        socket = new WebSocket(`wss://stream.binance.com:9443/ws/${cryptos.filter(s => s !== "TON").map(s => s.toLowerCase() + 'usdt@ticker').join('/')}`);
         socket.onmessage = (e) => {
             const data = JSON.parse(e.data);
             const sym = data.s.replace('USDT', '');
@@ -170,15 +172,20 @@
     }
 
     function toggleChart(el, tv, sym) {
-        const chart = el.nextElementSibling;
-        const isOpen = chart.classList.contains('active');
-        document.querySelectorAll('.chart-container').forEach(c => c.classList.remove('active'));
+        const chartBox = el.nextElementSibling;
+        const isOpen = chartBox.classList.contains('active');
+        
+        document.querySelectorAll('.chart-container').forEach(c => {
+            c.classList.remove('active');
+            c.innerHTML = "";
+        });
+
         if(!isOpen) {
-            chart.classList.add('active');
+            chartBox.classList.add('active');
             new TradingView.widget({
                 "autosize": true, "symbol": tv, "interval": "H", "theme": "dark",
-                "style": "3", "locale": "uz", "container_id": chart.id,
-                "hide_top_toolbar": true, "hide_legend": true
+                "style": "3", "locale": "uz", "container_id": chartBox.id,
+                "hide_top_toolbar": true, "hide_legend": true, "save_image": false
             });
         }
     }
