@@ -2,72 +2,72 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <title>Orbicxs Home</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orbicxs Search</title>
     <style>
         body {
-            margin: 0; padding: 0; height: 100vh;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a0033 100%);
-            font-family: 'Segoe UI', sans-serif;
-            display: flex; flex-direction: column; align-items: center;
-            justify-content: center; color: white; overflow: hidden;
+            margin: 0; padding: 0;
+            background-color: #202124;
+            color: #e8eaed;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex; flex-direction: column; height: 100vh;
         }
-        .logo {
-            font-size: 5rem; font-weight: 900; color: #00ccff;
-            text-shadow: 0 0 30px rgba(0, 204, 255, 0.5);
-            margin-bottom: 20px; cursor: default;
+        .header { display: flex; justify-content: flex-end; padding: 15px; font-size: 13px; }
+        .header a { color: white; text-decoration: none; margin-left: 15px; opacity: 0.8; }
+        .header a:hover { text-decoration: underline; }
+        
+        .main { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        
+        /* Orbicxs Logo Style */
+        .logo { font-size: 85px; font-weight: bold; margin-bottom: 30px; cursor: default; user-select: none; }
+        .o1 { color: #4285F4; } .r { color: #EA4335; } .b { color: #FBBC05; }
+        .i { color: #4285F4; } .c { color: #34A853; } .x { color: #EA4335; } .s { color: #FBBC05; }
+
+        .search-container { width: 100%; max-width: 584px; position: relative; }
+        .search-bar {
+            width: 100%; background: #303134; border: 1px solid #5f6368;
+            border-radius: 24px; padding: 12px 20px; box-sizing: border-box;
+            color: white; font-size: 16px; outline: none; transition: box-shadow 0.2s;
         }
-        .search-box {
-            width: 550px; padding: 18px 25px;
-            font-size: 1.2rem; border: none; border-radius: 50px;
-            outline: none; background: white; color: #333;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            transition: 0.3s;
+        .search-bar:hover, .search-bar:focus {
+            background-color: #3c4043; box-shadow: 0 1px 6px rgba(32,33,36,0.28); border-color: rgba(223,225,229,0);
         }
-        .search-box:focus { box-shadow: 0 0 20px #00ccff; }
-        .currency-container {
-            margin-top: 50px; display: flex; gap: 30px;
-            background: rgba(255,255,255,0.05); padding: 15px 40px;
-            border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);
+        
+        .buttons { margin-top: 25px; }
+        .btn {
+            background-color: #303134; border: 1px solid #303134; border-radius: 4px;
+            color: #e8eaed; font-size: 14px; margin: 5px; padding: 10px 20px;
+            cursor: pointer; transition: border 0.2s;
         }
-        .currency-item { text-align: center; }
-        .currency-item span { color: #00ccff; font-weight: bold; display: block; font-size: 1.2rem; }
+        .btn:hover { border: 1px solid #9aa0a6; color: #fff; }
+        
+        .footer { background: #171717; padding: 15px; font-size: 14px; color: #9aa0a6; border-top: 1px solid #3c4043; }
     </style>
 </head>
 <body>
-
-    <div class="logo">Orbicxs</div>
-    
-    <input type="text" id="searchInput" class="search-box" 
-           placeholder="Orbicxs orqali qidirish..." autofocus>
-
-    <div class="currency-container">
-        <div class="currency-item">USD <span id="usd">...</span></div>
-        <div class="currency-item">EUR <span id="eur">...</span></div>
-        <div class="currency-item">RUB <span id="rub">...</span></div>
+    <div class="header">
+        <a href="#">Gmail</a>
+        <a href="#">Rasmlar</a>
+        <a href="#" style="background: #8ab4f8; color: #202124; padding: 7px 15px; border-radius: 4px; font-weight: bold;">Kirish</a>
     </div>
 
-    <script>
-        const input = document.getElementById('searchInput');
-        input.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                const query = input.value.trim();
-                if (query) {
-                    // Python brauzeriga qidiruv so'rovini yuborish
-                    window.location.href = "https://orbicxs.com/search?q=" + encodeURIComponent(query);
-                }
-            }
-        });
+    <div class="main">
+        <div class="logo">
+            <span class="o1">O</span><span class="r">r</span><span class="b">b</span><span class="i">i</span><span class="c">c</span><span class="x">x</span><span class="s">s</span>
+        </div>
+        <div class="search-container">
+            <form action="https://www.google.com/search" method="GET">
+                <input type="text" name="q" class="search-bar" placeholder="Orbicxs orqali qidiring..." autofocus>
+                <div class="buttons">
+                    <button type="submit" class="btn">Orbicxs Qidiruvi</button>
+                    <button type="button" class="btn" onclick="location.href='https://orbicxs.com'">Omadingizni sinang</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-        async function fetchCurrency() {
-            try {
-                const res = await fetch('https://cbu.uz/uz/arkhiv-kursov-valyut/json/');
-                const data = await res.json();
-                document.getElementById('usd').innerText = data[0].Rate + " so'm";
-                document.getElementById('eur').innerText = data[1].Rate + " so'm";
-                document.getElementById('rub').innerText = data[2].Rate + " so'm";
-            } catch (err) {}
-        }
-        fetchCurrency();
-    </script>
+    <div class="footer">
+        O'zbekiston | Orbicxs © 2026
+    </div>
 </body>
 </html>
