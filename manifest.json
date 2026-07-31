@@ -1,22 +1,32 @@
 {
+  "id": "/",
   "name": "OrbicXs",
   "short_name": "OrbicXs",
+  "description": "Kichik, lekin muhim tafsilotlar ustiga qurilgan messenjer.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#FFFFFF",
-  "theme_color": "#FFFFFF",
   "orientation": "portrait-primary",
-  "gcm_sender_id": "103953800507",
+  "background_color": "#0C0B18",
+  "theme_color": "#0C0B18",
   "icons": [
     {
-      "src": "logo.png",
+      "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "logo.png",
+      "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
